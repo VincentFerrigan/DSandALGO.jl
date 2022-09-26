@@ -6,7 +6,8 @@ include("./RPNTypes.jl")
 include("./RPNUtils.jl")
 import .MyStacks
 
-export HP35, SET_OF_STATIC_TYPES, run, peek, stacksize, readexpressions_linebyline
+export HP35, SET_OF_STATIC_TYPES, run, peek, stacksize, 
+readexpressions_linebyline, personalnumbers_lastdigit, check_personalnumber
 
 function readexpressions_linebyline(filename, hp35::HP35)
 	open(filename, "r") do f

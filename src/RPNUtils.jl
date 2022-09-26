@@ -1,9 +1,5 @@
 # Utils for RPN module
 
-# Outer Constructs
-
-HP35(stacktype::Symbol) = HP35(stacktype, "")
-
 # utils
 
 function clean_rpn_stringtovector(uncleanrpn::String; 
@@ -17,10 +13,8 @@ function clean_rpn_stringtovector(uncleanrpn::String;
 	return v
 end
 
-
-# specialarn funkar ej. Den är *' och inte '* FIXA
 function evalrpn(hp35::HP35)
-	while hp35.ip < size(hp35.rpn)[1]
+	while hp35.ip < length(hp35.rpn)
 		hp35.ip += 1
 		token = hp35.rpn[hp35.ip]
 		x = 0
@@ -28,25 +22,33 @@ function evalrpn(hp35::HP35)
 		if match(hp35.rxOperands, "$token") != nothing 
 			MyStacks.push!(hp35.stack, parse(Int, "$token"))
 		elseif match(hp35.rxOperators, "$token") != nothing
-			y = MyStacks.pop!(hp35.stack)
-			x = MyStacks.pop!(hp35.stack)
-		elseif token == '\''
-			y = MyStacks.pop!(hp35.stack)
+		    if token == '*' && (hp35.ip + 1) <= length(hp35.rpn) && hp35.rpn[hp35.ip + 1] == '\''
+			    y = MyStacks.pop!(hp35.stack)
+            else
+			    y = MyStacks.pop!(hp35.stack)
+			    x = MyStacks.pop!(hp35.stack)
+            end
 		end
 		
-		if token == '+' MyStacks.push!(hp35.stack, +(x,y))
+        if token == '*'
+		    if (hp35.ip + 1) <= length(hp35.rpn) && hp35.rpn[hp35.ip + 1] == '\''
+			    res = *(y,2)
+			    if res > 9 
+                    MyStacks.push!(hp35.stack, +(%(res,10),div(res,10)))
+			    else 
+                    MyStacks.push!(hp35.stack, res)
+                end
+            else
+                MyStacks.push!(hp35.stack, *(x,y)) 
+            end
+		elseif token == '+' MyStacks.push!(hp35.stack, +(x,y))
 		elseif token == '-' MyStacks.push!(hp35.stack, -(x,y))
-		elseif token == '*' MyStacks.push!(hp35.stack, *(x,y)) ## lägg till spec logik
 		elseif token == '/' MyStacks.push!(hp35.stack, div(x,y))
 		elseif token == '%' MyStacks.push!(hp35.stack, %(x,y))
-		elseif token =='\''  &&  hp35.rpn[hp35 + 1] == '*'
-			res = *(y,2)
-			if res > 9 MyStacks.push!(hp35.stack, +(%(res,10),div(res,10)))
-			else MyStacks.push!(hp35.stack, res)
-			end
-			hp35.ip += 1
-		end
-	end
+        elseif token == '\'' 
+            continue
+        end
+    end
 end
 
 """
@@ -84,3 +86,41 @@ end
 function stacksize(hp35::HP35)
 	return MyStacks.stacksize(hp35.stack)
 end
+
+function personalnumbers_lastdigit(hp35::HP35, pnbr_without_lastdigit)
+    1 <= ÷(pnbr_without_lastdigit, 10^8) < 10 || 
+    throw(ArgumentError("Only nine digits allowed"))
+
+    runcalculator(hp35, 10)
+    pnbr = pnbr_without_lastdigit
+    for n = 8:-1:0
+        runcalculator(hp35, div(pnbr, 10^n))
+        iseven(n) && runcalculator(hp35, "*'")
+        pnbr = %(pnbr, 10^n)
+    end
+    runcalculator(hp35, "+"^8)
+    runcalculator(hp35, 10)
+    runcalculator(hp35, "%")
+    runcalculator(hp35, "-")
+    runcalculator(hp35)
+end
+
+function check_personalnumber(hp35::HP35, pnbr)
+    1<= ÷(pnbr, 10^9) < 10 || 
+    throw(ArgumentError("Only ten digit personal number allowed"))
+
+    return %(pnbr, 10) == personalnumbers_lastdigit(hp35, div(pnbr, 10))
+end
+
+# nr = 810222055
+# println(10)
+# for n = 8:-1:0
+#     # println(nr)
+#     println(div(nr, 10^n))
+#     iseven(n) && println("*'")
+#     nr = %(nr, 10^n)
+# end
+# println("+"^8)
+# println(10)
+# println("%-")
+# "*'"    

@@ -3,7 +3,7 @@ module MyStacks
 include("MyLL.jl")
 import .MyLL
 
-export ListStack, StaticStack, DynamicStack, pop!, push!, peek, stacksize,
+export SinglyLLStack, StaticStack, DynamicStack, pop!, push!, peek, stacksize,
 stackceiling, resizestack!
 
 # types 
@@ -33,7 +33,7 @@ mutable struct SinglyLLStack <: MyListStack
 	items::MyLL.SinglyLinkedList
 	head::Int
 	function SinglyLLStack()
-		new(MyLL.SinglyLinkedList(), 0)
+		new(MyLL.SinglyLinkedList{Int}(), 0)
 	end
 end
 
@@ -112,7 +112,7 @@ function peek(stack::MyListStack)
 	if stack.head == 0
 		#show("Nothing to see here")
 	else
-		return MyLL.peek(stack.items)
+		return MyLL.peekfirst(stack.items)
 	end
 end
 
