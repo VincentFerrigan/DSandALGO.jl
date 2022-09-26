@@ -8,7 +8,8 @@ append!, pushfirst!, popfirst!, peekfirst, listfromvector, isempty, findtail
 # Types
 abstract type MyAbstractNode{T} end
 abstract type MyAbstractLinkedList{T} end
-abstract type MyImprovedLinkedList{T} end
+abstract type MyBasicLinkedList{T} <: MyAbstractLinkedList{T} end
+abstract type MyImprovedLinkedList{T} <: MyAbstractLinkedList{T} end
 
 mutable struct SingleNode{T} <: MyAbstractNode{T}
     data::T
@@ -28,12 +29,12 @@ mutable struct BinaryTreeNode{T} <:MyAbstractNode{T}
     right::Union{BinaryTreeNode{T}, Nothing}
 end
 
-mutable struct SinglyLinkedList{T} <: MyAbstractLinkedList{T}
+mutable struct SinglyLinkedList{T} <: MyBasicLinkedList{T}
     head::Union{Nothing, SingleNode{T}}
     n::Int
 end
 
-mutable struct DoublyLinkedList{T} <: MyAbstractLinkedList{T}
+mutable struct DoublyLinkedList{T} <: MyBasicLinkedList{T}
     head::Union{Nothing, DoubleNode{T}}
     n::Int
 end
@@ -72,7 +73,7 @@ ISinglyLinkedList{T}() where {T} = ISinglyLinkedList(nothing, nothing, 0) # if w
 # utils
 length(ll::MyAbstractLinkedList{T}) where {T} = ll.n
 
-function isempty(ll::MyAbstractLinkedList{T}) where {T} 
+function isempty(ll::MyBasicLinkedList{T}) where {T} 
     ll.head === nothing ? true : false
 end
 
@@ -89,7 +90,7 @@ function pushfirst!(sll::SinglyLinkedList{T}, item::T) where {T} ## how to do if
 end
 
 
-function popfirst!(ll::MyAbstractLinkedList{T}) where T
+function popfirst!(ll::MyBasicLinkedList{T}) where T
     ll.n == 0  &&  throw(ArgumentError("List is empty"))
 
     item = ll.head.data
@@ -114,9 +115,14 @@ end
 
 
 # Hur använda på bästa sätt? Går det att använda för findtail?
-function iterate(sll::MyAbstractLinkedList{T}, 
+function iterate(ll::MyAbstractLinkedList{T}, 
     node::Union{MyAbstractNode{T}, Nothing} = sll.head) where {T}
-    node === nothing ? nothing : (node.data, node.next)
+    if isa(ll, SinglyLinkedList) 
+        node === nothing ? nothing : (node.data, node.next)
+    elseif isa(ll, DoublyLinkedList)
+        node === nothing ? nothing : (node.data, node.previous, node.next)
+    end
+    return node
 end
 
 # # Krockade en del. Vet inte riktigt varför
@@ -126,7 +132,7 @@ end
 #     end
 # end
 
-function findtail(ll::MyAbstractLinkedList)
+function findtail(ll::MyBasicLinkedList)
     # short-curcuit condition
     isempty(ll) && throw(BoundsError())
 
@@ -154,7 +160,8 @@ function peekfirst(ll::MyAbstractLinkedList)
     return item
 end
 
-# Som en pushfirst!(list::SingleLinkedList, iter...)
+# Ska göras om
+# Som en pushfirst!(list::SinglyLinkedList, iter...)
 function listfromvector(vector::Vector{T}) where {T}
     # short-circuit return conditions
     length(vector) == 0 && return SinglyLinkedListA{T}()
