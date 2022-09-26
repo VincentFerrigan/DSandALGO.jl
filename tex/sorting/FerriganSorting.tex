@@ -1,0 +1,338 @@
+   
+%! Author = Vincent Ferrigan <ferrigan@kth.se>
+%! Date = 2022-09-02
+
+
+% Preamble
+\documentclass[a4paper, 11pt]{article}
+% Packages
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{fontspec}
+\usepackage{polyglossia}
+\usepackage{microtype}
+\setmonofont{DejaVu Sans Mono}[Scale=MatchLowercase]
+\usepackage{minted}
+\usepackage{latexsym,exscale,stmaryrd,amsmath,amssymb}
+\newtheorem{definition}{Definition}
+\usepackage{unicode-math}
+\usepackage{lmodern}
+\usepackage{enumitem}
+\usepackage{subcaption}
+\usepackage{graphicx}
+\usepackage{hyperref}
+% \usepackage{natbib}
+% \usepackage[nottoc]{tocbibind}
+% \usepackage{listings}
+\usepackage{xcolor}
+\usepackage{siunitx}
+\usepackage{tikz}
+\usepackage[font=small,labelfont=bf]{caption}
+% Addiding JuliaMono
+\newfontfamily \JuliaMono {JuliaMono-Regular.ttf}[
+    Path      = ./,
+    Extension = .ttf
+    ]
+\newfontface \JuliaMonoMedium{JuliaMono-Regular}
+\setmonofont{JuliaMonoMedium}[
+    Contextuals=Alternate
+]
+
+
+\title{Searching in a sorted array\\ \small{HID1021 Algorithms and data structures}} %%TODO vilken rubricering
+\author{Vincent Ferrigan}
+
+\date{\today}
+
+\begin{document}
+    \maketitle
+    \section*{Introduction}
+    In this paper, the performance and implementation of three sorting algorithms,  
+    \emph{selection sort}, \emph{insertion sort} and \emph{merge sort}, 
+    were analyzed. This was done through benchmarking -- i.e. comparing the performance on
+    different sets of data solving different types of problems. 
+    For example, one might ask the following two fundamental questions
+    
+    \begin{itemize}
+        \item How well do these algorithms' scale over time, with the growth of input data?
+        \item Does the quality of data affect the performance?
+        E.g. what if the elements in a list are already in order? 
+        What if they are partially in order?
+    \end{itemize}
+
+    The author of this study has therefore chosen to compare these algorithms on 
+    two types of data; data that needs to be sorted and data that already
+    happens to be in order. 
+    
+
+    \section*{Methods}
+    The algorithms were implemented in \emph{Julia}. The code was written in 
+    \emph{VSCode} and run on \textbf{Julia 1.8.0}. Some scripts were executed
+    from the \emph{REPL terminal} while others (e.g. when using DataFrames and
+    Plots) were executed from the \emph{Jupyter Notebook}. 
+
+    Julia has a just-in-time (JIT) compilation -- which means that the code is
+    dynamically compiled during program run time.     
+    It takes time for the JIT compiler to 
+    initially load the code and compile it. Therefore, in order not to skew the
+    results, \emph{warmup calls} were performed on certain parts of the code
+    before they were benchmarked. This in order to avoid including 
+    compilation time. The warmup calls were done with the @time macro prior to
+    benchmarking.
+    
+
+\clearpage
+
+    \section*{The Algorithms}
+    This section briefly describes the algorithms and exemplifies their 
+    implementation with Julia code that was written by the author of this study. 
+    
+    It is important for the reader to note that in Julia, arrays are 1-based, 
+    i.e. started from 1 to N, and that one dimensional arrays
+    are called vectors. For consistency, the author has chosen to refer to 
+    one dimensional arrays as vectors.
+
+    \subsection*{Selection Sort}
+    The simplest of the three sorting algorithms is \emph{Selection Sort}. 
+    It performs sorting by first selecting the smallest item in a list
+    and swapping it with the first entry. Then it repeats this act in order to
+    find the next smallest item to swap with the second entry. 
+    It repeatably searches through the remaining items in order to find and
+    select the smallest item to move into the next position -- until all
+    positions are filled. See figure \ref{code:selectionsort} for how selection sort
+    might be implemented in Julia. 
+
+    In row 3 one can find the \emph{short-circuit pre-condition} for this function 
+    (no need to sort a vector that consist of less than 2 items).
+    The condition stated in row 10 is probably unnecessary, but was added by the author
+    to avoid the algorithm's absurdity of swapping the selected item with itself
+    if already positioned correctly. Row 11 is an example of how relatively easy it is 
+    to swap two values in Julia compared to other programming languages.
+
+    \begin{figure}[H]
+    \begin{minted}[
+        % label=codeexample, 
+        linenos, 
+        % breaklines, 
+        % frame = single, 
+        fontsize=\footnotesize]{julia}
+function selectionsort!(v::Vector)
+    N = length(v)
+    N > 1 || throw(ArgumentError("Vector $v has less than 2 item"))
+
+    for i = 1:(N - 1)
+        min_index = i
+        for j = (i + 1):N
+            if v[j] < v[min_index]  min_index = j end
+        end
+        if min_index != i  
+            v[i], v[min_index] = v[min_index], v[i] 
+        end
+    end
+end
+    \end{minted}
+    \caption{Selection Sort in Julia}
+    \label{code:selectionsort}
+    \end{figure}
+    
+    \clearpage
+    \subsection*{Insertion Sort}
+    In each iteration of this algorithm, an element is inserted into an 
+    already sorted part of the list.  The insertion requires that all items,
+    with indices in between the new and previous position of the inserted item, 
+    be moved one step. The new position for the inserted item is not its final one.
+    It may be required to move to make room for a smaller item.
+    This ''move'' is expressed as a while-loop in the Julia 
+    implementation example below (see row 7-10 in figure
+    \ref{code:insertionsort}). The above steps are 
+    iterated until the entire list is in order. 
+
+        
+    \begin{figure}[H]
+    \begin{minted}[
+        % label=codeexample, 
+        linenos, 
+        % breaklines, 
+        % frame = single, 
+        fontsize=\footnotesize]{julia}
+function insertionsort!(v::Vector)
+    N = length(v)
+    N > 1 || throw(ArgumentError("Vector $v has less than 2 items"))
+
+    for i = 2:N
+        j = i
+        while j > 1  &&  v[j] < v[j - 1]
+            v[j], v[j - 1] = v[j - 1], v[j]
+            j -= 1
+        end
+    end
+end
+    \end{minted}
+    \caption{Insertion Sort in Julia}
+    \label{code:insertionsort}
+    \end{figure}
+    
+    \clearpage
+    \subsection*{Merge Sort}
+    The main idea behind \emph{Merge Sort} is based on the
+    \emph{divide-and-conquer method}.
+    That is \emph{dividing} the (sorting) problem into independent subproblems. 
+    \emph{Conquer} the subproblems by solving them recursively and later \emph{combine} the 
+    subsolutions to solve the overall problem. 
+    The algorithm has therefore three parts:
+    \begin{enumerate}
+        \item Divide the vector into two halves,
+        \item conquer each half by sorting them recursively and
+        \item combine the results by merging the two halves to obtain one fully
+        sorted vector.
+    \end{enumerate}
+    The algorithm is implemented as a recursive function. 
+    Every recursive function starts with a \emph{''do-again-test''},
+    which in the implementation example, 
+    is written as a \emph{short-circuit return condition} 
+    (see row 2 in figure \ref{code:mergesort}).
+    The recursion ''bottoms out'' when the subvector to be sorted has just one
+    element. It occurs in the implementation example when ''top'' meets ''bottom'' 
+    as stated in the ''do-again-test''. 
+
+    \begin{figure}[H]
+    \begin{minted}[
+        % label=codeexample, 
+        linenos, 
+        % breaklines, 
+        % frame = single, 
+        fontsize=\footnotesize]{julia}
+function mergesort!(v::Vector, bottom = 1, top = length(v)) 
+    top <= bottom  &&  return
+
+    middle = ÷(bottom + top, 2)
+    mergesort!(v, bottom, middle)  # Sort bottom half
+    mergesort!(v, middle + 1, top) # Sort top half
+    merge!(v, bottom, middle, top) # Merge results
+end
+
+    \end{minted}
+    \caption{Merge Sort in Julia}
+    \label{code:mergesort}
+    \end{figure}
+
+    \clearpage
+    The merge part of the algorithm is written by the author as a \emph{''helper function''}.
+    The code (see figure \ref{code:merge}) with its comments explains how the merge-part of
+    the algorithm operates. 
+
+    \begin{figure}[H]
+    \begin{minted}[fontsize=\footnotesize]{julia}
+function merge!(v::Vector, bottom, middle, top)
+    i = bottom          # bottom index
+    j = middle + 1      # top index
+
+    # Copy vector v to a temporary vector
+    tempv = Vector(undef, top)
+    for k = bottom:top
+         tempv[k] = v[k]
+    end
+
+    for k = bottom:top
+        # merge
+        if i > middle       # when the bottom is done
+            v[k] = tempv[j]
+            j += 1
+        elseif j > top      # when the top is done 
+            v[k] = tempv[i]
+            i += 1
+
+        # add ''remainders'' according to size 
+        elseif tempv[j] < tempv[i] 
+            v[k] = tempv[j]
+            j += 1
+        else
+            v[k] = tempv[i]
+            i += 1
+        end
+    end
+end
+    \end{minted}
+    \caption{The helper-function to Merge Sort in Julia}
+    \label{code:merge}
+    \end{figure}    \clearpage
+    \section*{Results}
+    The final result of the benchmarks are illustrated diagrammatically 
+    in three figures below. \ref{fig:smaldata} and \ref{fig:bigdata} were 
+    performed on randomly ordered vectors, while \ref{fig:sorted} was 
+    performed on already sorted vectors. 
+\begin{figure}[h]
+    \centering
+    \begin{subfigure}[h]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{./input/fig1smallsmall.pdf}
+        \caption{Smaller range}
+        \label{fig:smaldata}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[h]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{./input/fig1big.pdf}
+        \caption{Greater range}
+        \label{fig:bigdata}
+    \end{subfigure}
+    % \hfill
+    \begin{subfigure}[h]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{./input/fig1sorted.pdf}
+        \caption{Ordered data}
+        \label{fig:sorted}
+    \end{subfigure}
+    \caption{Growth of data scale over time}
+    \label{fig:benchmarks}
+\end{figure}
+
+    \section*{Discussion}
+    Selection Sort passes through a vector without passing info about the vector to
+    the next search operation, which means that the quality of the data does not
+    affect its performance. It does not matter if the data is already in order, 
+    semisorted or even if it consists entirely of entries with equal value, 
+    it still takes the same amount of time to sort as it would do with a 
+    randomly ordered vector. 
+    
+    Regardless of how the vector looks, the loop gets 
+    executed exactly $N-1$ times. In other words, there are no best or worst cases. 
+    The running time is
+    dominated by the number of compares which are $\frac{N^2}{2}$. 
+    Which gives us a time complexity of $O(n^2)$. The time complexity for
+    this method is well illustrated in the benchmarks visually represented as 
+    diagrams in the figure \ref{fig:benchmarks}. 
+
+    As one can clearly read from the benchmark results, the performance of 
+    Insertion Sort heavily depends on the initial order of the item in the vector.
+    As shown in figure \ref{fig:sorted}, where the benchmark was performed on already 
+    sorted vectors, Insertion Sort outperformed not only 
+    Selection Sort but also Merge Sort. This is due to the fact that Insertion Sort
+    ''skips'' the sorted items. The study can therefore conclude that for partially 
+    sorted vectors, insertion sort might be quite efficient. 
+    
+    E.g. it would 
+    probably be the algorithm of choice for sorting data where a small vector
+    has been appended to a large sorted vector. However, even though it might excel 
+    in certain cases, its time complexity is still based on its worst case scenario, 
+    which like Selection Sort is $O(n^2)$.
+
+    For greater data sets, that are randomly ordered, 
+    Merge Sort is to be preferred -- as the benchmark results 
+    in figure \ref{fig:bigdata} shows. 
+    It has a time complexity of $O(n\log n)$. 
+    Nonetheless, since the algorithm is recursive, one
+    can conclude that the memory cost is greater than for the other two algorithms. 
+    The merge function in the example code in figure \ref{code:merge}, 
+    has to allocate memory for the temporary vector (in which elements get copied to).
+    This would require a lot of data space for large vectors. \emph{The question is 
+    for how big of a data set would force the programmer to choose a 
+    different algorithm all together?}
+
+    Fortunately, there are plenty of sorting algorithms to choose from. \emph{Shell Sort}, 
+    \emph{Jump Sort}, \emph{Heap Sort} and \emph{Quick Sort}... to name a few.  
+
+
+    
+\end{document}

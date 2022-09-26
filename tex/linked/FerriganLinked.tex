@@ -1,0 +1,321 @@
+   
+%! Linked Lists
+%! Author = Vincent Ferrigan <ferrigan@kth.se>
+%! Date = 2022-09-21
+
+
+% Preamble
+\documentclass[a4paper, 11pt]{article}
+% Packages
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{fontspec}
+\usepackage{polyglossia}
+\usepackage{microtype}
+\setmonofont{DejaVu Sans Mono}[Scale=MatchLowercase]
+\usepackage{minted}
+\usepackage{latexsym,exscale,stmaryrd,amsmath,amssymb}
+\newtheorem{definition}{Definition}
+\usepackage{unicode-math}
+\usepackage{lmodern}
+\usepackage{enumitem}
+\usepackage{subcaption}
+\usepackage{graphicx}
+\usepackage{hyperref}
+% \usepackage{natbib}
+% \usepackage[nottoc]{tocbibind}
+% \usepackage{listings}
+\usepackage{xcolor}
+\usepackage{siunitx}
+\usepackage{tikz}
+\usepackage[font=small,labelfont=bf]{caption}
+% Addiding JuliaMono
+\newfontfamily \JuliaMono {JuliaMono-Regular.ttf}[
+    Path      = ./,
+    Extension = .ttf
+    ]
+\newfontface \JuliaMonoMedium{JuliaMono-Regular}
+\setmonofont{JuliaMonoMedium}[
+    Contextuals=Alternate
+]
+
+
+\title{Linked lists[DRAFT]\\ \small{ID1021 Algorithms and Data structures}} %%TODO vilken rubricering
+\author{Vincent Ferrigan}
+
+\date{\today}
+
+\begin{document}
+    \maketitle
+    \section*{Introduction}
+    In this study, the performance and comparison of two data structures,
+    \emph{Linked Lists} and \emph{Arrays}, were studied. 
+    
+    This was done through benchmarking -- i.e. comparing the performance of
+    the two data structures in terms of managing data. 
+    By managing data we mean:
+    
+    \begin{enumerate}[label*=\arabic*.]
+        \item The size of data
+        \begin{enumerate}[label*=\arabic*.]
+            \item How well do they scale?
+            \item Are they dynamic or static in nature? 
+        \end{enumerate}
+        \item The operations on data
+        \begin{enumerate}[label*=\arabic*.]
+            \item Appending one to another e.g. appending one array to another
+            vis-à-vis appending one linked list to another. 
+            \begin{enumerate}[label*=\arabic*.]
+                \item Does the type of data structure matter?
+                \item Which of the lists affect the overall performance?
+                Is the size of the prepending list critical or does the size of
+                the appending list matter?
+            \end{enumerate}
+            \item Deletion/insertion. Does the position matter? That is, is
+            there a difference between inserting/deleting an item in the
+            beginning or end? Does the type of data structure matter?
+            \item Searching for an item.
+            \item Updating an item. 
+        \end{enumerate}
+        \item The performance of certain tasks. 
+        Stack implementation is a good example. 
+        Do list-based stack perform better than array-based stacks?
+    \end{enumerate}
+    Not all of above-mentioned will be benchmarked, however, the authors intent is to
+    reach certain conclusions on the queries that were stated above. 
+    This can be done through studying their implementation. 
+            
+    \section*{Methods}
+    The data structures and stack were implemented in \emph{Julia}. 
+    The code was written in \emph{VSCode} and run on \textbf{Julia 1.8.0}. 
+    Quick-fixes was done in \emph{Vim}. 
+    Some scripts were executed from the \emph{REPL terminal} while others (e.g.
+    when using DataFrames and producing Plots) were executed from the
+    \emph{Pluto Notebook}. Pluto was also used to stack operations.  
+
+    Julia has a just-in-time (JIT) compilation -- which means that the code is
+    dynamically compiled during program run time.     
+    It takes time for the JIT compiler to 
+    initially load the code and compile it. Therefore, in order not to skew the
+    results, \emph{warmup calls} were performed on certain parts of the code
+    before they were benchmarked. This in order to avoid including 
+    compilation time. The warmup calls were done with the @time macro prior to
+    benchmarking.
+
+    % \section*{Learning objectives}
+\clearpage
+
+    \section*{The Data Structures}
+    This section briefly describes the key differences between arrays and lists 
+    
+    It is important for the reader to note that in Julia, arrays are 1-based, 
+    i.e. started from 1 to N, and that one dimensional arrays are called
+    vectors. For consistency, the author has chosen to refer to one dimensional
+    arrays as vectors.
+
+    \subsection*{Linked Lists}
+    Linked lists are dynamic data structures that unlike vectors, do not require
+    to be stored contiguously in memory. They are composed of a chain of 
+    nodes that are linked together by pointers (or references). 
+    Each node contains at least two parts; an item of any type and 
+    the memory address of the next node in the list. 
+    The last node in the list contains a null pointer 
+    -- i.e. it points to NIL or nothing. 
+    Figure \ref{code:SingleNode} shows how a basic node can be implemented in Julia. 
+    Instead of pointing to Julia's version of ''nothing'', 
+    the author chose to point to a custom type of own creation. 
+    As seen in row 3, the type, called \emph{EmptySingleNode}, is immutable 
+    and contains nothing. The two constructors in row 9-15 are implemented for 
+    convenience. 
+
+
+    \begin{figure}[H]
+    \begin{minted}[
+        % label=codeexample, 
+        linenos, 
+        % breaklines, 
+        % frame = single, 
+        fontsize=\footnotesize]{julia}
+abstract type AbstractSingleNode end
+
+struct EmptySingleNode <: AbstractSingleNode end
+
+mutable struct SingleNode <: AbstractSingleNode
+    item::Any
+    next::AbstractSingleNode
+
+    function SingleNode(item) 
+        new(item, EmptySingleNode())
+    end
+
+    function SingleNode(item, next::SingleNode)
+        new(item, next)
+    end
+end
+    \end{minted}
+    \caption{A basic single node in Julia}
+    \label{code:SingleNode}
+    \end{figure}
+    
+    \clearpage
+    
+    The first node is conventionally called the \emph{head}, as in the head of the list. 
+    The linked list therefore only contains one item, the pointer (or reference) to the first node, the 
+    head that is, as seen in figure \ref{code:SingleList}
+    
+    \begin{figure}[H]
+    \begin{minted}[
+        % label=codeexample, 
+        linenos, 
+        % breaklines, 
+        % frame = single, 
+        fontsize=\footnotesize]{julia}
+mutable struct SingleLinkedList
+
+    head::AbstractSingleNode
+
+    function SingleLinkedList()
+        new(EmptySingleNode())
+    end
+    function SingleLinkedList(item)
+        new(SingleNode(item))
+    end
+end
+        
+    \end{minted}
+    \caption{Single Linked List in Julia}
+    \label{code:SingleList}
+    \end{figure}
+
+    The last node is conventionally called the \emph{tail} and, as mentioned earlier, points to ''nothing''.
+    Locating the lists tail requires one to traverse through the entire list.
+    An example how this can be done is shown in figure \ref{code:findtail}
+    
+    \begin{figure}[H]
+    \begin{minted}[
+        % label=codeexample, 
+        linenos, 
+        % breaklines, 
+        % frame = single, 
+        fontsize=\footnotesize]{julia}
+function findtail(list::SingleLinkedList)
+    # short-curcuit condition
+    isempty(list) && throw(BoundsError())
+    node = list.head
+    while !(node.next isa EmptySingleNode)
+        node = node.next
+    end
+    return node
+end
+    \end{minted}
+    \caption{How to loacte the tail of a Linked List in Julia}
+    \label{code:findtail}
+    \end{figure}
+     
+    This function is important when appending an item, or another list, to a list. 
+    Appending an item requires it to first be stored in a node, that then gets pointed to 
+    by the tail of the list, which has to be found by traversing the entire list. 
+    The appended node effectively becomes the new tail. Appending another list to a list
+    requires a similar procedure. As one can read from the code in 
+    figure \ref{code:appendfunctions}, the head of the appended list gets attached to the tail 
+    of the prepended list.
+    
+    \begin{figure}[H]
+    \begin{minted}[
+        % label=codeexample, 
+        linenos, 
+        % breaklines, 
+        % frame = single, 
+        fontsize=\footnotesize]{julia}
+function append!(list::SingleLinkedList, item)
+    node = SingleNode(item)
+    if isempty(list)
+        list.head = node
+    else
+        tail = findtail(list) 
+        tail.next = node
+    end
+end
+
+function append!(firstlist::SingleLinkedList, secondlist::SingleLinkedList)
+    if isempty(firstlist)
+        firstlist.head = secondlist.head
+    else
+        tail = findtail(firstlist)
+        tail.next = secondlist.head
+    end
+end
+    \end{minted}
+    \caption{Append functions in Julia}
+    \label{code:appendfunctions}
+    \end{figure}
+
+    \clearpage
+
+
+
+    \section*{Results}
+    The final result of the benchmarks are illustrated in the figures below.
+    Both diagrammatically visualize the performance of an appending operation. 
+    
+    \begin{figure}[h]
+        \centering
+        \includegraphics[width=\textwidth]{./input/fig1onlylistsmicro.pdf}
+        \caption{Appending lists}
+        \label{fig:appendlists}
+    \end{figure}
+
+
+    \begin{figure}[h]
+        \centering
+        \includegraphics[width=\textwidth]{./input/fig2withvectorsmilli.pdf}
+        \caption{Appending lists compared to vectors}
+        \label{fig:appendlistscomparedtovectors}
+    \end{figure}
+
+    In figure \ref{fig:appendlists} one can read that the size of the appended list
+    does not affect the overall performance. It is the size of the prepended list that is critical. 
+    
+    But they vastly outperform the same operation with vectors. 
+    As seen in the second figure \ref{fig:appendlistscomparedtovectors}
+    compares the same operation with vectors. 
+
+    \clearpage
+    \section*{Discussion}
+Elements of linked lists cannot be as easily (nor as timely) accessed as with arrays. 
+It requires one to traverse the list. 
+Accessing the last index in an array is done in constant time, 
+while it would require one to traverse the entire linked list -- until one
+reaches the node that is linked to the node that contains ''nothing''.
+%**{::comment} 
+%Ska jag skriva något om nothing, jag skulle kunna ha en fotnot och/eller länka till den delen som beskriver processen med text och kod.
+% {:/comment}**
+As a consequence *binary search* is not be possible using linked lists, 
+since the elements can not be accessed in constant time. 
+Nor is it possible to locate the maximum element as fast as with vectors 
+-- unless, perhaps, it's a linked list that is sorted in descending order.  
+On the other hand, appending lists is more timely than with vectors. 
+This is due to the fact that vectors size and layout in memory are fixed at the 
+time of creation. 
+Appending a vector to another requires one to allocate memory for a new larger vector 
+that can fit them both. 
+All the elements from both vectors need to be copied to the new vector. 
+
+Compared to vectors, it's also easier to insert into or remove items from 
+a sequence with linked lists. 
+Removing the last node however, requires one to traverse the entire list. 
+Time proportional to the length of the list.
+
+
+% ** skriv om nedan**
+%  However, one may need to combine two lists into one. This is the concatenation
+%  operation. With chains, the best approach is to attach the second list to the
+%  end of the first one. In our implementation of the linked list, this would
+%  require one to traverse the first list until the last node is encountered and
+%  then set its next pointer to point to the first element of the second list.
+%  This requires time proportional to the size of the first linked list. This can
+%  be improved by maintaining a pointer to the last node in the linked list.
+
+
+\end{document}
