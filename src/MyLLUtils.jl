@@ -11,21 +11,21 @@ end
 
 # # TODO
 # # Krockade en del. Vet inte riktigt varför
-# function show(io::IO, ll::MyAbstractLinkedList)
-#     for data in ll
-#         print(data, " ")
-#     end
-# end
+function show(io::IO, ll::MyAbstractLinkedList)
+    for data in ll
+        print(data, " ")
+    end
+end
 
 # Hur använda på bästa sätt? Går det att använda för findtail?
-function iterate(ll::MyAbstractLinkedList{T}, 
+function iterate(ll::MyBasicLinkedList{T}, 
     node::Union{MyLinkedListNode{T}, Nothing} = ll.head) where {T}
-    if isa(ll, SinglyLinkedList) 
-        node === nothing ? nothing : (node.data, node.next)
-    elseif isa(ll, DoublyLinkedList)
-        node === nothing ? nothing : (node.data, node.previous, node.next)
-    end
-    return node
+    #     node === nothing ? nothing : (node.data, node.next)
+    # elseif isa(ll, DoublyLinkedList)
+    #     node === nothing ? nothing : (node.data, node.previous, node.next)
+    # end
+    # return node
+    node === nothing ? nothing : (node.data, node.next)
 end
 
 function pushfirst!(sll::SinglyLinkedList{T}, item::T) where {T} ## how to do if items...
@@ -56,7 +56,7 @@ end
 """
     popfirst!(ll:MyAbstractLinkedList)
 
-Removes removes the item from the beginning of the list
+Removes the item from the beginning of the list
 # Arguments
 - `ll::MyAbstractLinkedList` : List of type SinglyLinkedList and DoublyLinkedList
 """
@@ -117,10 +117,54 @@ function pop!(ll::MyBasicLinkedList{T}) where {T}
 end
 
 """
+    popat!(ll::MyBasicLinkedList{T}, position::Int64)
+
+Removes item at given position in the list. 
+Returns data of item or throws an error if position exceeds length of list. 
+"""
+function popat!(ll::MyBasicLinkedList{T}, position::Int64) where {T}
+    ll.n == 0  &&  throw(ArgumentError("List is empty"))
+    ll.n < position && 
+    throw(ArgumentError("Position $position exceed list length of $(sll.n)"))
+
+
+    if position == 1
+        return popfirst!(ll)
+    elseif position == ll.n
+        return pop!(ll)
+    end
+
+    node = ll.head
+    counter = 1
+    while counter < position 
+        counter += 1
+        if node.next !== nothing 
+            node = node.next
+        end 
+    end
+
+    if isa(ll, DoublyLinkedList)
+        previousnode = node.previous
+        nextnode = node.next
+        previousnode.next = nextnode
+        nextnode.previous = previousnode
+        # finish? Do test. Is the above correct? 
+    elseif isa(ll, SinglyLinkedList)
+        previousnode = findnode_withnext(ll, node)
+        nextnode = node.next
+        previousnode.next = nextnode
+    end
+
+    ll.n -= 1
+    if ll.n == 0 ll.head = nothing end
+    return node.data
+end
+
+"""
     removeitem!(ll::MyBasicLinkedList{T}, item::T)
 
 Removes the first occurrence of item in given list. 
-Returns nothing if no such item is found.
+Returns data of item or `nothing` if no such item is found.
 # TODO
 - what if previous or next are nothings?
 - test
@@ -236,49 +280,47 @@ end
 # Benchmarking utils
 
 # Bör göras om som en push! eller pushfirst!(list::SinglyLinkedList, iter...)
-function sllistfromvector(vector::Vector{T}) where {T}
+function sllistfromvector(v::Vector{T}) where {T}
     # short-circuit return conditions
-    length(vector) == 0 && return SinglyLinkedList{T}()
-    # length(vector) == 1 && return SinglyLinkedList(vector[1])
+    length(v) == 0 && return SinglyLinkedList{T}()
 
-    newlist = SinglyLinkedList{T}()
+    newsll= SinglyLinkedList{T}()
     
     # Bör finnas ett bättre sätt. Typ mha av iterate grejen
-    i = length(vector)
+    i = length(v)
     while i > 0 
-        pushfirst!(newlist, vector[i])
+        pushfirst!(newsll, v[i])
         i -= 1
     end
-    return newlist
+    return newsll
 end
 
 # Bör göras om som en push! eller pushfirst!(list::DoublyLinkedList, iter...)
-function dllistfromvector(vector::Vector{T}) where {T}
+function dllistfromvector(v::Vector{T}) where {T}
     # short-circuit return conditions
-    length(vector) == 0 && return DoublyLinkedList{T}()
-    # length(vector) == 1 && return DoublyLinkedList(vector[1])
+    length(v) == 0 && return DoublyLinkedList{T}()
 
-    newlist = DoublyLinkedList{T}()
+    newdll = DoublyLinkedList{T}()
     
     # Bör finnas ett bättre sätt. Typ mha av iterate grejen
-    i = length(vector)
+    i = length(v)
     while i > 0 
-        pushfirst!(newlist, vector[i])
+        pushfirst!(newdll, v[i])
         i -= 1
     end
-    return newlist
+    return newdll
 end
 
-function createrandom_sllists(size)
-    vector = Vector{Int}(undef, size)
-    rand!(vector, 1:10*size)
-    list = sllistfromvector(vector)
-    return list 
+function createrandom_sllist(size)
+    v = Vector{Int64}(undef, size)
+    rand!(v, 1:10*size)
+    sll = sllistfromvector(v)
+    return sll 
 end
 
-function createrandom_dllists(size)
-    vector = Vector{Int}(undef, size)
-    rand!(vector, 1:10*size)
-    list = dllistfromvector(vector) ## Har dessa previous?
-    return list 
+function createrandom_dllist(size)
+    v = Vector{Int64}(undef, size)
+    rand!(v, 1:10*size)
+    dll = dllistfromvector(v) ## Har dessa previous?
+    return dll 
 end

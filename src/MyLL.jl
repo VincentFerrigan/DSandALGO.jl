@@ -39,8 +39,8 @@ Contains:
 - findfirst: tests
 - sllistfromvector
 - dllistfromvector
-- createrandom_sllists # Utils for benchmarking
-- createrandom_sllists # Utils for benchmarking
+- createrandom_sllist # Utils for benchmarking
+- createrandom_sllist # Utils for benchmarking
 
 """
 module MyLL
@@ -48,15 +48,15 @@ module MyLL
 using Random # for creating random lists/vectors
 
 import Base: isempty, pushfirst!, popfirst!, length
-import Base: append!, push!, pop!, show, findfirst
+import Base: append!, push!, pop!, popat!, show, findfirst, iterate
 
 include("MyLLTypes.jl") # includes types and outer constructs
 include("MyLLUtils.jl") # includes all functions for linkedlists
 
 export SinglyLinkedList, DoublyLinkedList,
-append!, pushfirst!, popfirst!, pop!, push!, peekfirst, 
-isempty, findtail, removeitem!,
+append!, pushfirst!, popfirst!, pop!, push!, popat!, peekfirst, 
+isempty, length, show, findtail, removeitem!,
 sllistfromvector, dllistfromvector, 
-createrandom_sllists, createrandom_dllists
+createrandom_sllist, createrandom_dllist
 
 end # module
