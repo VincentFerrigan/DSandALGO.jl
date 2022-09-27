@@ -117,24 +117,24 @@ function pop!(ll::MyBasicLinkedList{T}) where {T}
 end
 
 """
-    popat!(ll::MyBasicLinkedList{T}, position::Int64)
+    popat!(dll::DoublyLinkedList{T}, position::Int64)
 
 Removes item at given position in the list. 
 Returns data of item or throws an error if position exceeds length of list. 
 """
-function popat!(ll::MyBasicLinkedList{T}, position::Int64) where {T}
-    ll.n == 0  &&  throw(ArgumentError("List is empty"))
-    ll.n < position && 
-    throw(ArgumentError("Position $position exceed list length of $(sll.n)"))
+function popat!(dll::DoublyLinkedList{T}, position::Int64) where {T}
+    dll.n == 0  &&  throw(ArgumentError("List is empty"))
+    position <= dll.n ||
+    throw(ArgumentError("Position $position exceed list length of $(dll.n)"))
 
 
     if position == 1
-        return popfirst!(ll)
-    elseif position == ll.n
-        return pop!(ll)
+        return popfirst!(dll)
+    elseif position == dll.n
+        return pop!(dll)
     end
 
-    node = ll.head
+    node = dll.head
     counter = 1
     while counter < position 
         counter += 1
@@ -143,20 +143,50 @@ function popat!(ll::MyBasicLinkedList{T}, position::Int64) where {T}
         end 
     end
 
-    if isa(ll, DoublyLinkedList)
-        previousnode = node.previous
-        nextnode = node.next
-        previousnode.next = nextnode
-        nextnode.previous = previousnode
-        # finish? Do test. Is the above correct? 
-    elseif isa(ll, SinglyLinkedList)
-        previousnode = findnode_withnext(ll, node)
-        nextnode = node.next
-        previousnode.next = nextnode
+    previousnode = node.previous
+    nextnode = node.next
+    previousnode.next = nextnode
+    nextnode.previous = previousnode
+    # finish? Do test. Is the above correct? 
+
+    dll.n -= 1
+    if dll.n == 0 dll.head = nothing end
+    return node.data
+end
+
+"""
+    popat!(sll::SinglyLinkedList{T}, position::Int64)
+
+Removes item at given position in the list. 
+Returns data of item or throws an error if position exceeds length of list. 
+"""
+function popat!(sll::SinglyLinkedList{T}, position::Int64) where {T}
+    sll.n == 0  &&  throw(ArgumentError("List is empty"))
+    position <= sll.n ||
+    throw(ArgumentError("Position $position exceed list length of $(sll.n)"))
+
+
+    if position == 1
+        return popfirst!(sll)
+    elseif position == sll.n
+        return pop!(sll)
     end
 
-    ll.n -= 1
-    if ll.n == 0 ll.head = nothing end
+    node = sll.head
+    counter = 1
+    while counter < position 
+        counter += 1
+        if node.next !== nothing 
+            node = node.next
+        end 
+    end
+
+    previousnode = findnode_withnext(sll, node)
+    nextnode = node.next
+    previousnode.next = nextnode
+
+    sll.n -= 1
+    if sll.n == 0 sll.head = nothing end
     return node.data
 end
 

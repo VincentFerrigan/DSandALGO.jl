@@ -8,8 +8,12 @@ Notes:
 
 Contains:
 - appendvectors!
+- createrandomvector
 """
 module MyV
+using Random
+
+export appendvectors!, createrandomvector
 
 function appendvectors!(firstvector, secondvector)
 
@@ -27,5 +31,16 @@ function appendvectors!(firstvector, secondvector)
     firstvector = newvector
     return firstvector
 end 
+
+"""
+    createrandomvector(k, n)
+
+Creates a vector of size `k`, with random values from 1 to `n`
+"""
+function createrandomvector(k, n)
+    v = Vector{Int64}(undef, k)
+    rand!(v, 1:n)
+    v
+end
 
 end # module
