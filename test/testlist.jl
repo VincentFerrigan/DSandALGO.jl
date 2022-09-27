@@ -2,9 +2,11 @@ using Test
 using Revise
 
 include("../src/MyLL.jl")
+include("../src/MyV.jl")
 # include("../src/LinkedListsVsArrays.jl")
 # using .LinkedListsVsArrays
 using .MyLL
+using .MyV
 # import .MyLL
 
 # @testset "LinkedListsVsArrays.jl" begin
@@ -54,7 +56,14 @@ using .MyLL
     @test removeitem!(hamlet2, "not") === "not"
     @test push!(hamlet2, "question!") == hamlet2
     @test findtail(hamlet2).data == "question!"
-    # println(hamlet2)
+    println(hamlet2)
+    hs2size = length(hamlet2)
+    @test popat!(hamlet2, 3) == "or"
+    println(hamlet2)
+    @test length(hamlet2) == hs2size - 1
+    @test popat!(hamlet2, length(hamlet2)) == "question!"
+    println(hamlet2)
+
 end
 
 @testset "DoublyLinkedHamlet" begin
@@ -100,11 +109,32 @@ end
     @test removeitem!(hamlet_d2, "not") === "not"
     @test push!(hamlet_d2, "question!") == hamlet_d2
     @test findtail(hamlet_d2).data == "question!"
-    # println(hamlet_d2)
+    println(hamlet_d2)
+    hd2size = length(hamlet_d2)
+    @test popat!(hamlet_d2, 2) == "be"
+    println(hamlet_d2)
+    @test length(hamlet_d2) == hd2size - 1
+    @test popat!(hamlet_d2, 1) == "To"
+    @test length(hamlet_d2) == hd2size - 2
+    println(hamlet_d2)
 end
 
 @testset "Help-utilities for Benchmarking and testing" begin
-    @test isa(createrandom_dllists(10), DoublyLinkedList) == true
-    @test isa(createrandom_sllists(10), SinglyLinkedList) == true
-    @test length(createrandom_dllists(10)) == 10
+    @test isa(createrandom_dllist(10), DoublyLinkedList) == true
+    @test isa(createrandom_sllist(10), SinglyLinkedList) == true
+    @test length(createrandom_dllist(10)) == 10
 end
+
+k = 100 # k operations
+n = 10  # list of n elements
+
+sequence_vector = createrandomvector(k, n)
+singlylinked_list = createrandom_sllist(n)
+doublylinked_list = createrandom_dllist(n)
+
+@time begin
+    for i in eachindex(sequence_vector)
+        pushfirst!(singlylinked_list, popat!(singlylinked_list, sequence_vector[i]))
+    end
+end
+
