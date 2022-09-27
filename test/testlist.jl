@@ -11,10 +11,6 @@ using .MyLL
 #     # Write your tests here.
 # end
 
-# Also works when the module is imported istead of using using.
-# When a function is not exported, then the namespace is most def required when using using
-
-# requires that the module gets included via 'using .ModuleName' e.g. 'using .MySLL'
 @testset "SinglyLinkedHamlet" begin
     hamlet = SinglyLinkedList{String}()
     @test isempty(hamlet) == true
@@ -105,4 +101,10 @@ end
     @test push!(hamlet_d2, "question!") == hamlet_d2
     @test findtail(hamlet_d2).data == "question!"
     # println(hamlet_d2)
+end
+
+@testset "Help-utilities for Benchmarking and testing" begin
+    @test isa(createrandom_dllists(10), DoublyLinkedList) == true
+    @test isa(createrandom_sllists(10), SinglyLinkedList) == true
+    @test length(createrandom_dllists(10)) == 10
 end
