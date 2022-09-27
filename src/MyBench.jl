@@ -1,4 +1,16 @@
 # BenchFun.jl
+"""
+	BenchFun
+
+Author: Vincent Ferrigan, ferrigan@kth.se
+Date: 2022-09-27
+Notes: utils for benchmarking. TODO: Improve
+
+Contains:
+- createrandomlists
+- createtworandomlists
+- timeappend
+"""
 module BenchFun
 include("MyLL.jl")
 include("MyV.jl")

@@ -1,3 +1,18 @@
+# SortingAlgo.jl
+"""
+    SortingAlgo
+
+
+Author: Vincent Ferrigan, <ferrigan@kth.se>
+Date: 2022-09-27
+Notes: Sorting algorithms for vectors
+
+Contains:
+- sectionsort!
+- insertionsort!
+- mergesort!
+- merge!
+"""
 #=
 ID1021Algorithm.jl
 - Julia version: 1.8.0
@@ -8,7 +23,7 @@ ID1021Algorithm.jl
 - Version: 0.2
 =#
 
-module ID1021Algorithm
+module SortingAlgo
 using Random
 
 export selectionsort!, insertionsort!, mergesort!

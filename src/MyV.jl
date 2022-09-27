@@ -1,4 +1,15 @@
-module V
+# MyV.jl
+"""
+    MyV
+
+Author: Vincent Ferrigan, ferrigan@kth.se
+Date: 2022-09-27
+Notes:
+
+Contains:
+- appendvectors!
+"""
+module MyV
 
 function appendvectors!(firstvector, secondvector)
 

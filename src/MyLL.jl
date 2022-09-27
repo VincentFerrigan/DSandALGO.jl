@@ -1,4 +1,40 @@
 # MyLL.jl
+"""
+    MyLL
+
+Author: Vincent Ferrigan, ferrigan@kth.se
+Date: 2022-09-27
+Notes:
+
+Contains:
+# Types
+- SingleNode <: MyAbstractNode 
+- DoubleNode <: MyAbstractNode
+- BinaryTreeNode <: MyAbstractNode
+- SinglyLinkedList <: MyBasicLinkedList <: MyAbstractLinkedList
+- DoublyLinkedList <: MyBasicLinkedList <: MyAbstractLinkedList
+- BinaryTree{T} <: MyAbstractTree # TODO
+- ISinglyLinkedList <: MyImprovedLinkedList <: MyAbstractLinkedList
+- IDoublyLinkedList <: MyImprovedLinkedList <: MyAbstractLinkedList
+# Outer constructs
+- SinglyLinkedList{T}()
+- DoublyLinkedList{T}()
+- IDoublyLinkedList{T}()
+- ISinglyLinkedList{T}() 
+# utils
+- length
+- isempty
+- show #TODO
+- pushfirst!
+- popfirst!
+- push!
+- pop! #TODO
+- append!
+- peekfirst
+- iterate
+- findtail
+- listfromvector
+"""
 module MyLL
 
 import Base: isempty, pushfirst!, popfirst!, length, append!, push!, pop!, show
@@ -10,6 +46,7 @@ abstract type MyAbstractNode{T} end
 abstract type MyAbstractLinkedList{T} end
 abstract type MyBasicLinkedList{T} <: MyAbstractLinkedList{T} end
 abstract type MyImprovedLinkedList{T} <: MyAbstractLinkedList{T} end
+# abstract type MyAbstractTree{T} end
 
 mutable struct SingleNode{T} <: MyAbstractNode{T}
     data::T
@@ -39,10 +76,10 @@ mutable struct DoublyLinkedList{T} <: MyBasicLinkedList{T}
     n::Int
 end
 
-mutable struct BinaryTree{T}
-    head::Union{Nothing, BinaryTreeNode{T}}
-    # depth::Int
-end
+# mutable struct BinaryTree{T} <: MyAbstractTree
+#     head::Union{Nothing, BinaryTreeNode{T}}
+#     # depth::Int
+# end
 
 """
 Improved SinglyLinkedList
@@ -77,6 +114,14 @@ function isempty(ll::MyBasicLinkedList{T}) where {T}
     ll.head === nothing ? true : false
 end
 
+# # TODO
+# # Krockade en del. Vet inte riktigt varför
+# function show(io::IO, ll::MyAbstractLinkedList)
+#     for data in ll
+#         print(data, " ")
+#     end
+# end
+
 function pushfirst!(sll::SinglyLinkedList{T}, item::T) where {T} ## how to do if items...
     if isempty(sll)
         sll.head = SingleNode{T}(item, nothing)
@@ -88,7 +133,6 @@ function pushfirst!(sll::SinglyLinkedList{T}, item::T) where {T} ## how to do if
     sll.n += 1
     return sll
 end
-
 
 function popfirst!(ll::MyBasicLinkedList{T}) where T
     ll.n == 0  &&  throw(ArgumentError("List is empty"))
@@ -113,35 +157,9 @@ function push!(sll::SinglyLinkedList{T}, item::T) where {T}
     return sll # alt. skriv utan retur
 end
 
-
-# Hur använda på bästa sätt? Går det att använda för findtail?
-function iterate(ll::MyAbstractLinkedList{T}, 
-    node::Union{MyAbstractNode{T}, Nothing} = sll.head) where {T}
-    if isa(ll, SinglyLinkedList) 
-        node === nothing ? nothing : (node.data, node.next)
-    elseif isa(ll, DoublyLinkedList)
-        node === nothing ? nothing : (node.data, node.previous, node.next)
-    end
-    return node
-end
-
-# # Krockade en del. Vet inte riktigt varför
-# function show(io::IO, ll::MyAbstractLinkedList)
-#     for data in ll
-#         print(data, " ")
-#     end
+# # TODO
+# function pop!(xxxxxx)
 # end
-
-function findtail(ll::MyBasicLinkedList)
-    # short-curcuit condition
-    isempty(ll) && throw(BoundsError())
-
-    node = ll.head
-    while node.next !== nothing
-        node = node.next
-    end
-    return node
-end
 
 function append!(firstlist::SinglyLinkedList, secondlist::SinglyLinkedList)
     if isempty(firstlist)
@@ -160,11 +178,34 @@ function peekfirst(ll::MyAbstractLinkedList)
     return item
 end
 
+# Hur använda på bästa sätt? Går det att använda för findtail?
+function iterate(ll::MyAbstractLinkedList{T}, 
+    node::Union{MyAbstractNode{T}, Nothing} = sll.head) where {T}
+    if isa(ll, SinglyLinkedList) 
+        node === nothing ? nothing : (node.data, node.next)
+    elseif isa(ll, DoublyLinkedList)
+        node === nothing ? nothing : (node.data, node.previous, node.next)
+    end
+    return node
+end
+
+
+function findtail(ll::MyBasicLinkedList)
+    # short-curcuit condition
+    isempty(ll) && throw(BoundsError())
+
+    node = ll.head
+    while node.next !== nothing
+        node = node.next
+    end
+    return node
+end
+
 # Ska göras om
 # Som en pushfirst!(list::SinglyLinkedList, iter...)
 function listfromvector(vector::Vector{T}) where {T}
     # short-circuit return conditions
-    length(vector) == 0 && return SinglyLinkedListA{T}()
+    length(vector) == 0 && return SinglyLinkedList{T}()
     # length(vector) == 1 && return SinglyLinkedList(vector[1])
 
     newlist = SinglyLinkedList{T}()

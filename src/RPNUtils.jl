@@ -1,4 +1,5 @@
-# Utils for RPN module
+# RPNUtils.jl
+# Utils for RPN module in RPN.jl
 
 # utils
 
@@ -65,10 +66,6 @@ function runcalculator(hp35::HP35, operand::Int)
 	MyStacks.push!(hp35.stack, operand)
 end
 
-# function resetHP35(hp35::HP35) how to??????
-# 	hp35 = HP35("")
-# end
-
 function runcalculator(hp35::HP35, expression::String)
 	hp35.rpn = clean_rpn_stringtovector(expression)
 	hp35.ip = 0
@@ -86,6 +83,10 @@ end
 function stacksize(hp35::HP35)
 	return MyStacks.stacksize(hp35.stack)
 end
+
+# function resetHP35(hp35::HP35) how to??????
+# 	hp35 = HP35("")
+# end
 
 function personalnumbers_lastdigit(hp35::HP35, pnbr_without_lastdigit)
     1 <= ÷(pnbr_without_lastdigit, 10^8) < 10 || 
@@ -112,6 +113,21 @@ function check_personalnumber(hp35::HP35, pnbr)
     return %(pnbr, 10) == personalnumbers_lastdigit(hp35, div(pnbr, 10))
 end
 
+function readexpressions_linebyline(filename, hp35::HP35)
+	open(filename, "r") do f
+		for line in eachline(f)
+			number = tryparse(Int, "$line")
+			if typeof(number) != Nothing
+				runcalculator(hp35, number)
+			else
+				runcalculator(hp35, "$line" )
+			end
+		end
+	end
+	return peek(hp35)
+end
+
+# # debuggstuff # clean
 # nr = 810222055
 # println(10)
 # for n = 8:-1:0

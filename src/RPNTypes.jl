@@ -1,4 +1,5 @@
-# Types for RPN module
+# RPNTypes.jl
+# Types for RPN module in RPN.jl
 
 # consts
 const SET_OF_STATIC_TYPES = Set([:STATICSTACK, :DYNAMICSTACK, :LISTSTACK])

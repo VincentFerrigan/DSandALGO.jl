@@ -1,4 +1,24 @@
 # MyStacks.jl
+"""
+	MyStacks
+
+Author: Vincent Ferrigan, ferrigan@kth.se
+Date: 2022-09-27
+Notes:
+
+Contains:
+# Types
+- StaticStack <: MyVectorStack <: MyStack
+- DynamicStack <: MyVectorStack <: MyStack
+- SinglyLLStack <: MyListStack <: MyStack
+# Utils
+- push!
+- pop! # two separate (vector and list) #TODO:Merge
+- peek # two separate (vector and list) #TODO:Merge
+- stacksize
+- stackceiling
+- resizestack
+"""
 module MyStacks
 include("MyLL.jl")
 import .MyLL
@@ -43,25 +63,26 @@ end
 push!(stack::MyVectorStack, item::Int)
 stack item
 """
-function push!(stack::MyVectorStack, item::Int)
-	if stack.head == stackceiling(stack) && isa(stack, StaticStack)
+function push!(stack::MyStack, item::Int)
+	if isa(stack, StaticStack) && stack.head == stackceiling(stack)
 		@show("Hold your horses, the stack is full")
 		return
-	elseif stack.head == stackceiling(stack) && isa(stack, DynamicStack)
+	elseif isa(stack, DynamicStack) && stack.head == stackceiling(stack)
 		resizestack!(stack, *(stackceiling(stack), 2))
 	end
+
     stack.head += 1
-	stack.items[stack.head] = item
+
+	if isa(stack, StaticStack) 
+		stack.items[stack.head] = item
+	elseif isa(stack, DynamicStack) 
+		stack.items[stack.head] = item
+	elseif isa(stack, SinglyLLStack) 
+		MyLL.pushfirst!(stack.items, item)
+	end
 	#show("pushed item $item. The new head is now $(stack.head)")
 	stack
 end
-
-
-function push!(stack::MyListStack, item::Int)
-	stack.head += 1
-	MyLL.pushfirst!(stack.items, item)
-end
-
 
 """
 pop!(stack::MyVectorStack)
