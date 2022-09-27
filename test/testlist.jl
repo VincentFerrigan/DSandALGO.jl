@@ -5,7 +5,7 @@ include("../src/MyLL.jl")
 # include("../src/LinkedListsVsArrays.jl")
 # using .LinkedListsVsArrays
 using .MyLL
-# import .MySLL
+# import .MyLL
 
 # @testset "LinkedListsVsArrays.jl" begin
 #     # Write your tests here.
@@ -13,47 +13,9 @@ using .MyLL
 
 # Also works when the module is imported istead of using using.
 # When a function is not exported, then the namespace is most def required when using using
-@testset "Hamlet" begin
-    hamlet = MyLL.SinglyLinkedList{String}()
-    @test MyLL.isempty(hamlet) == true
-
-    MyLL.push!(hamlet, "To")
-    MyLL.push!(hamlet, "be")
-    MySLL.push!(hamlet, "or")
-    MySLL.push!(hamlet, "not")
-    @test !(MySLL.isempty(hamlet))
-    @test MySLL.length(hamlet) == 4
-    @test MySLL.popfirst!(hamlet) == "To"
-    @test MySLL.popfirst!(hamlet) == "be"
-    @test MySLL.popfirst!(hamlet) == "or"
-    @test MySLL.popfirst!(hamlet) == "not"
-    @test MySLL.isempty(hamlet) == true
-    MySLL.pushfirst!(hamlet, "not")
-    MySLL.pushfirst!(hamlet, "or")
-    MySLL.pushfirst!(hamlet, "be")
-    MySLL.pushfirst!(hamlet, "To")
-    MySLL.push!(hamlet, "that")
-    MySLL.push!(hamlet, "is")
-    MySLL.push!(hamlet, "the")
-    MySLL.push!(hamlet, "question")
-    @test MySLL.popfirst!(hamlet) == "To"
-    @test MySLL.popfirst!(hamlet) == "be"
-    @test MySLL.popfirst!(hamlet) == "or"
-    @test MySLL.popfirst!(hamlet) == "not"
-    @test MySLL.isempty(hamlet) == false
-    @test MySLL.peekfirst(hamlet) == "that"
-    @test MySLL.findtail(hamlet).data == "question"
-    hamlet2 = MySLL.listfromvector(["To", "be", "or", "not", "to", "be", ","])
-    @test MySLL.findtail(hamlet2).data == ","
-    MySLL.append!(hamlet2, hamlet)
-    @test MySLL.peekfirst(hamlet2) == "To"
-    @test MySLL.findtail(hamlet2).data == "question"
-    @test MySLL.length(hamlet2) ==  11
-    # Write your tests here.
-end
 
 # requires that the module gets included via 'using .ModuleName' e.g. 'using .MySLL'
-@testset "HamletWithoutNamespace" begin
+@testset "SinglyLinkedHamlet" begin
     hamlet = SinglyLinkedList{String}()
     @test isempty(hamlet) == true
 
@@ -83,11 +45,64 @@ end
     @test isempty(hamlet) == false
     @test peekfirst(hamlet) == "that"
     @test findtail(hamlet).data == "question"
-    hamlet2 = listfromvector(["To", "be", "or", "not", "to", "be", ","])
+    hamlet2 = sllistfromvector(["To", "be", "or", "not", "to", "be", ","])
     @test findtail(hamlet2).data == ","
     append!(hamlet2, hamlet)
     @test peekfirst(hamlet2) == "To"
     @test findtail(hamlet2).data == "question"
     @test length(hamlet2) ==  11
-    # Write your tests here.
+    @test pop!(hamlet2) == "question"
+    @test length(hamlet2) ==  10
+    @test findtail(hamlet2).data == "the"
+    @test removeitem!(hamlet2, "nt") === nothing
+    @test removeitem!(hamlet2, "not") === "not"
+    @test push!(hamlet2, "question!") == hamlet2
+    @test findtail(hamlet2).data == "question!"
+    # println(hamlet2)
+end
+
+@testset "DoublyLinkedHamlet" begin
+    hamlet_d1 = DoublyLinkedList{String}()
+    @test isempty(hamlet_d1) == true
+
+    push!(hamlet_d1, "To")
+    push!(hamlet_d1, "be")
+    push!(hamlet_d1, "or")
+    push!(hamlet_d1, "not")
+    @test !(isempty(hamlet_d1))
+    @test length(hamlet_d1) == 4
+    @test popfirst!(hamlet_d1) == "To"
+    @test popfirst!(hamlet_d1) == "be"
+    @test popfirst!(hamlet_d1) == "or"
+    @test popfirst!(hamlet_d1) == "not"
+    @test isempty(hamlet_d1) == true
+    pushfirst!(hamlet_d1, "not")
+    pushfirst!(hamlet_d1, "or")
+    pushfirst!(hamlet_d1, "be")
+    pushfirst!(hamlet_d1, "To")
+    push!(hamlet_d1, "that")
+    push!(hamlet_d1, "is")
+    push!(hamlet_d1, "the")
+    push!(hamlet_d1, "question")
+    @test popfirst!(hamlet_d1) == "To"
+    @test popfirst!(hamlet_d1) == "be"
+    @test popfirst!(hamlet_d1) == "or"
+    @test popfirst!(hamlet_d1) == "not"
+    @test isempty(hamlet_d1) == false
+    @test peekfirst(hamlet_d1) == "that"
+    @test findtail(hamlet_d1).data == "question"
+    hamlet_d2= dllistfromvector(["To", "be", "or", "not", "to", "be", ","])
+    @test findtail(hamlet_d2).data == ","
+    append!(hamlet_d2,hamlet_d1)
+    @test peekfirst(hamlet_d2) == "To"
+    @test findtail(hamlet_d2).data == "question"
+    @test length(hamlet_d2) ==  11
+    @test pop!(hamlet_d2) == "question"
+    @test length(hamlet_d2) ==  10
+    @test findtail(hamlet_d2).data == "the"
+    @test removeitem!(hamlet_d2, "nt") === nothing
+    @test removeitem!(hamlet_d2, "not") === "not"
+    @test push!(hamlet_d2, "question!") == hamlet_d2
+    @test findtail(hamlet_d2).data == "question!"
+    # println(hamlet_d2)
 end

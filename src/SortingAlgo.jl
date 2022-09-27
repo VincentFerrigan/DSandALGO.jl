@@ -34,8 +34,13 @@ export selectionsort!, insertionsort!, mergesort!
 
 """ 
     sectionsort!(v::Vector)
-    Repeatedly searches remaining items to find the smallest element 
-    and moves it to the correct location
+
+Sorts a vector with the section sort algorithm;
+Repeatedly searches remaining items to find the smallest element and moves it to
+the correct location
+
+# Arguments
+- v:Vector
 """ 
 function sectionsort!(v::Vector)
     N = length(v)

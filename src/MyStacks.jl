@@ -60,8 +60,13 @@ end
 # utils
 
 """
-push!(stack::MyVectorStack, item::Int)
-stack item
+	push!(stack::MyVectorStack, item::Int)
+
+Stack item
+
+# Arguments
+- `stack::MyStack`
+- `item::Int`
 """
 function push!(stack::MyStack, item::Int)
 	if isa(stack, StaticStack) && stack.head == stackceiling(stack)
