@@ -1,0 +1,461 @@
+   
+%! Linked Lists
+%! Author = Vincent Ferrigan <ferrigan@kth.se>
+%! Date = 2022-09-21
+
+
+% Preamble
+\documentclass[a4paper, 11pt]{article}
+% Packages
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{fontspec}
+\usepackage{polyglossia}
+\usepackage{microtype}
+\setmonofont{DejaVu Sans Mono}[Scale=MatchLowercase]
+\usepackage{listings}
+\usepackage{minted}
+\usepackage{latexsym,exscale,stmaryrd,amsmath,amssymb}
+\newtheorem{definition}{Definition}
+\usepackage{unicode-math}
+\usepackage{lmodern}
+\usepackage{enumitem}
+\usepackage{subcaption}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{multirow}
+
+%% Om jag vill referera till ett kod verb av något slag, som void null Int etc
+% \usepackage{tcolorbox}
+% \newtcbox{\somestuffstyle}{on line,boxrule=0pt,boxsep=0pt,colback=lightgray,top=1pt,bottom=1pt,left=1pt,right=1pt,arc=0pt,fontupper=\ttfamily}
+
+% \usepackage{natbib}
+% \usepackage[nottoc]{tocbibind}
+\usepackage{xcolor}
+\usepackage{siunitx}
+\usepackage{tikz}
+\usepackage[font=small,labelfont=bf]{caption}
+% Addiding JuliaMono
+\newfontfamily \JuliaMono {JuliaMono-Regular.ttf}[
+    Path      = ./,
+    Extension = .ttf
+    ]
+\newfontface \JuliaMonoMedium{JuliaMono-Regular}
+\setmonofont{JuliaMonoMedium}[
+    Contextuals=Alternate
+]
+
+\title{Doubly linked lists\\ \small{ID1021 Algorithms and Data structures}} %%TODO vilken rubricering
+\author{Vincent Ferrigan}
+
+\date{\today}
+
+\begin{document}
+    \maketitle
+    \section*{Introduction}
+    In this study, the performance and comparison of two data structures,
+    \emph{Doubly Linked Lists} and \emph{Singly Linked Lists}, were studied. 
+    
+    This was done through benchmarking -- i.e. comparing the performance of
+    the two data structures in terms of managing data. 
+    By managing data, we mean:
+    
+    \begin{enumerate}[label*=\arabic*.]
+        \item Size of data. How well do they scale? 
+        \item List-operations on data. 
+        \begin{enumerate}[label*=\arabic*.]
+                \item Does the position matter? 
+                That is, is there a difference between inserting/deleting an 
+                item in the beginning, middle or end? 
+                \item Does the type of data structure matter and why?
+            \end{enumerate}
+    \end{enumerate}
+
+    The authors intent is to reach certain conclusions on the queries that were stated above. 
+    This can also be done through studying their implementation.
+    
+            
+    \section*{Methods}
+    All the Data Structures and Algorithms were implemented in \emph{Julia}.
+    The Code was mostly written in \emph{VSCode} and run on \emph{Julia 1.8.0}.
+    Quick-fixes and editing was, however, done in \emph{Vim}
+
+    Some scripts were executed from the \emph{REPL terminal},  while others (e.g.
+    when using data frames, performing benchmarks and producing plots) were executed from the
+    \emph{Jupyter Notebook}. 
+    
+    \subsection*{Tools and packages}
+    All tests were performed with the built-in package \emph{Test} and iterative development
+    was made possible through \emph{Revise.jl} -- the latter operates by continuously
+    scanning the source code for changes, even changes in function defined in
+    other modules (including in different files).
+    
+    The benchmark data was constructed, manipulated and visualized through
+    \emph{DataFrames.jl} and \emph{Plots.jl}, while 
+    readable formatting was produced through \emph{Formatting.jl} and \emph{Unitful.jl}. 
+
+    \subsection*{The JIT}
+    Julia has a just-in-time (JIT) compilation -- which means that the code is
+    dynamically compiled during program run time.     
+    It takes time for the JIT compiler to 
+    initially load the code and compile it. Therefore, in order not to skew the
+    results, \emph{warmup calls} were performed on certain parts of the code
+    before they were benchmarked. This to avoid including 
+    compilation time. The warmup calls were done with the @timed macro prior to
+    benchmarking.
+
+    % \section*{Learning objectives}
+\clearpage
+
+    \section*{The Data Structures}
+    % TODO HÄR ÄR JAG NU
+
+    This section briefly describes the key differences between the two data
+    structures. 
+    
+    \subsection*{Conventions}
+    It is important for the reader to note that Julia uses a one-based-numbering
+    convention, (i.e. array indices start from 1 to N) and that one dimensional
+    arrays are called vectors. 
+    For consistency, the author has chosen to refer to one dimensional
+    arrays as vectors and apply the 1-based convention when numbering
+    sequences of elements more broadly. 
+    
+    Unlike other languages, Julia objects cannot be ''null'' by default. The
+    equivalent of \lstinline[language=Python]{None} in Python 
+    or \lstinline[language=C]{NULL} and \lstinline[language=C]{void} in C is
+    \mintinline{julia}{Nothing}. The Julia convention is to return the value \mintinline{julia}{nothing}, which is a
+    singleton instance of type \mintinline{julia}{Nothing}, when such a side effect is
+    desired. 
+
+    \subsection*{Linked Lists}
+    Linked lists are dynamic data structures that, unlike vectors, do not require
+    to be stored contiguously in memory. They are instead composed of a chain of 
+    nodes that are linked together by pointers or references. 
+    
+    The implementation of a linked list requires two data structures;
+    one for the actual node and another for the linked-list, the latter containing a
+    reference that points to the first node.
+    Each node contains at least two parts; an item of any type and 
+    the memory address of the next node in the list. 
+    The last node in the list contains a next filed that holds no value.  
+    -- i.e. it points to \mintinline{julia}{nothing} which, as previously mentioned, is a 
+    singleton instance of type ''Nothing''. 
+    The nodes for doubly linked, unlike singly linked lists
+    also contain a reference that points to the previous node in the list.
+    
+    Figure \ref{code:node} shows how two basic nodes can be implemented in Julia. 
+    \begin{figure}[H]
+        \centering
+    \begin{minted}[
+        % label=codeexample, 
+        linenos, 
+        % breaklines, 
+        % frame = single, 
+        fontsize=\footnotesize]{julia}
+mutable struct SingleNode{T} <: MyLinkedListNode{T}
+    data::T
+    next::Union{SingleNode{T}, Nothing}
+end
+
+mutable struct DoubleNode{T} <: MyLinkedListNode{T}
+    data::T
+    previous::Union{DoubleNode{T}, Nothing}
+    next::Union{DoubleNode{T}, Nothing}
+end
+    \end{minted}
+    \caption{Node examples for singly and doubly linked lists in Julia}
+    \label{code:node}
+    \end{figure}
+    
+    Since the fields \mintinline{julia}{next} and \mintinline{julia}{previous} only sometimes contain a
+    reference to another node, the data type \mintinline{julia}{Union} was used for field
+    declaration -- a union that includes the composite
+    data type (for the node in question) and `nothing`.
+    
+    The first node is conventionally called \emph{the head}, as in the head of the list. 
+    The linked list therefore usually only contains one item, the reference to the first node, the 
+    head that is, as seen in figure \ref{code:SingleList}. In the authors' implementation, 
+    the number of elements that the lists holds is also included. 
+    The \mintinline{julia}{head}, can
+    sometimes contain a reference to nothing, if the list is empty. 
+    
+    \begin{figure}[H]
+        \centering
+    \begin{minted}[
+        % label=codeexample, 
+        linenos, 
+        % breaklines, 
+        % frame = single, 
+        fontsize=\footnotesize]{julia}
+mutable struct SinglyLinkedList{T} <: MyBasicLinkedList{T}
+    head::Union{Nothing, SingleNode{T}}
+    n::Int
+end
+
+mutable struct DoublyLinkedList{T} <: MyBasicLinkedList{T}
+    head::Union{Nothing, DoubleNode{T}}
+    n::Int
+end
+
+# Outer constructs
+SinglyLinkedList{T}() where {T} = SinglyLinkedList{T}(nothing, 0)
+DoublyLinkedList{T}() where {T} = DoublyLinkedList{T}(nothing, 0)
+    \end{minted}
+    \caption{Single Linked List in Julia}
+    \label{code:SingleList}
+    \end{figure}
+   
+    The last node is conventionally called \emph{the tail} and, as mentioned earlier, 
+    points to ''nothing''. In some implementations, a reference to the tail is also included. 
+    However, it was omitted in this study.
+    Locating the lists' tail therefore requires one to traverse through the entire list.
+    An example on how this can be performed is shown in figure \ref{code:findtail}. 
+    The function is the same regardless if the list is singly or doubly linked.
+
+    \begin{figure}[H]
+    \centering
+    \begin{minted}[
+        % label=codeexample, 
+        linenos, 
+        % breaklines, 
+        % frame = single, 
+        fontsize=\footnotesize]{julia}
+function findtail(ll::MyBasicLinkedList{T}) where {T}
+    ll.n == 0  &&  throw(ArgumentError("List is empty"))
+
+    node = ll.head
+    while node.next !== nothing
+        node = node.next
+    end
+    return node
+end
+    \end{minted}
+    \caption{How to locate the tail of a Linked List in Julia}
+    \label{code:findtail}
+    \end{figure}
+
+    The function \mintinline{julia}{findtail} is used as a step in
+    adding/removing items at the end of the list. Adding items to the end of a collection 
+    is conventionally called \mintinline{julia}{push!} while removing is called \mintinline{julia}{pop!}. 
+     
+    \subsection*{The functions to be benchmarked}
+    The study was to benchmark time for $k$ amount of delete and insert operations performed on 
+    the two data structures of a growing size of $n$. 
+    
+    The delete-positions were randomly selected while all insertions were done
+    in front of the list. These two operations are conventionally
+    called
+    \mintinline{julia}{popat!} and \mintinline{julia}{pushfirst!} in Julia. 
+
+
+    \ref{code:popat!}, 
+    \begin{figure}[H]
+    \centering
+    \begin{minted}[
+        % label=codeexample, 
+        linenos, 
+        % breaklines, 
+        % frame = single, 
+        fontsize=\footnotesize]{julia}
+function pushfirst!(sll::SinglyLinkedList{T}, item::T) where {T}
+    if isempty(sll)
+        sll.head = SingleNode{T}(item, nothing)
+    else
+        oldhead = sll.head
+        newhead = SingleNode{T}(item, oldhead)
+        sll.head = newhead
+    end
+    sll.n += 1
+    return sll
+end
+
+function pushfirst!(dll::DoublyLinkedList{T}, item::T) where {T}
+    if isempty(dll)
+        dll.head = DoubleNode{T}(item, nothing, nothing)
+    else
+        oldhead = dll.head
+        newhead = DoubleNode{T}(item, nothing, oldhead)
+        oldhead.previous = newhead
+        dll.head = newhead
+    end
+    dll.n += 1
+    return dll
+end
+    \end{minted}
+    \caption{The pushfirst!()-functions insert items at the beginning of a list. The
+    examples are written in Julia and illustrate the key difference between singly
+    and doubly linked lists}
+    \label{code:pushfirst!}
+    \end{figure}
+
+    As one can gather from the implementation of both the pushfirst!-methods (for insertion) shown in
+    figure \ref{code:pushfirst!} and popat!-methods (for deletion) in figure
+    \ref{code:popat!}, 
+    some additional steps were required for doubly linked lists. This is due to
+    the fact that the reference to the previous field must also be updated.
+    However, as the benchmarking results will show, being bidirectional has its advances.  
+    
+    In row 6-7 (as in row 31-32) in figure \ref{code:popat!}, the delete-procedure is redirected to 
+    either a popfirst!-method, if deleting the first item is requested, or a pop!-method for
+    removing the last item. This is due to the fact that the procedure differs when editing the head or tail.
+    
+    To delete a node, one has to connect the previous and the next node together. In order 
+    to do so, the references to these nodes need to be known. The first step is
+    to locate the node that is to be deleted. Row 9-15 (as in row 34-40) is code
+    for the traversing forward through the list until given position.
+    Up until now the code has been the same regardless of list structure. The node that is up for deletion 
+    holds the reference that points to the next. Both popat!() functions copy the that reference. 
+    However, for the singly linked list, the reference to the previous node is unknown.
+    Which requires traversing the list once again, from head until it reaches
+    the node that points to the node that is to be deleted. As can be seen when
+    comparing row 17-19 to 42-45 in figure \ref{code:popat!}, the method for the
+    singly linked list has to call a separate function that does so and returns the reference to the previous one. 
+    \begin{figure}[H]
+    \centering
+    \begin{minted}[
+        % label=codeexample, 
+        linenos, 
+        % breaklines, 
+        % frame = single, 
+        fontsize=\footnotesize]{julia}
+function popat!(sll::SinglyLinkedList{T}, position::Int64) where {T}
+    sll.n == 0  &&  throw(ArgumentError("List is empty"))
+    position <= sll.n ||
+    throw(ArgumentError("Position $position exceed list length of $(sll.n)"))
+
+    if position == 1 return popfirst!(sll)
+    elseif position == sll.n return pop!(sll) end
+
+    node = sll.head
+    counter = 1
+
+    while counter < position 
+        counter += 1
+        if node.next !== nothing node = node.next end 
+    end
+
+    previousnode = findnode_withnext(sll, node) # call-function to find previous 
+    nextnode = node.next
+    previousnode.next = nextnode
+
+    sll.n -= 1
+    if sll.n == 0 sll.head = nothing end
+    return node.data
+end
+    
+function popat!(dll::DoublyLinkedList{T}, position::Int64) where {T}
+    dll.n == 0  &&  throw(ArgumentError("List is empty"))
+    position <= dll.n ||
+    throw(ArgumentError("Position $position exceed list length of $(dll.n)"))
+
+    if position == 1 return popfirst!(dll)
+    elseif position == dll.n return pop!(dll) end
+
+    node = dll.head
+    counter = 1
+
+    while counter < position 
+        counter += 1
+        if node.next !== nothing node = node.next end 
+    end
+
+    previousnode = node.previous # backward traversal possible
+    nextnode = node.next
+    previousnode.next = nextnode
+    nextnode.previous = previousnode
+
+    dll.n -= 1
+    if dll.n == 0 dll.head = nothing end
+    return node.data
+end
+    \end{minted}
+    \caption{The popat!() functions removes an item at given position. The
+    examples are written in Julia and illustrate the key difference between singly
+    and doubly linked lists}
+    \label{code:popat!}
+    \end{figure}
+    
+    \section*{Results}
+    The result of the benchmark is illustrated in the figure and table below.
+    The figure \ref{fig:fig1} diagrammatically visualize the operations while the
+    data is described in table \ref{tab:growth}.
+    
+    \begin{figure}[h]
+        \centering
+        \includegraphics[width=0.8\textwidth]{./input/doubly_fig1v3.pdf}
+        \caption{How insert and delete operations scale over time with the growth of list elements.}
+        \label{fig:fig1}
+    \end{figure}
+
+    \begin{table}[h]
+        \centering
+    \begin{tabular}{|c|c|c|c|c|c|c|}
+        \hline
+\multirow{2}{*}{n} & \multirow{2}{*}{k} & \multicolumn{2}{c|}{Time} & \multirow{2}{*}{Ratio}& \multicolumn{2}{c|}{Growth Ratio}\\
+                                        && SSL & DLL & & SLL & DLL \\
+
+\hline 
+\SI{100}{k} & \SI{1}{k} & \SI{0.17}{\nano\second} & \SI{0.09}{\nano\second} & \num{1.90} & \num{1.0}  & \num{1.0}\\
+\SI{200}{k} & \SI{1}{k} & \SI{0.36}{\nano\second} & \SI{0.19}{\nano\second} & \num{1.87} & \num{2.2}  & \num{2.2}\\
+\SI{300}{k} & \SI{1}{k} & \SI{0.65}{\nano\second} & \SI{0.30}{\nano\second} & \num{2.16} & \num{3.9}  & \num{3.4}\\
+\SI{400}{k} & \SI{1}{k} & \SI{0.90}{\nano\second} & \SI{0.49}{\nano\second} & \num{1.82} & \num{5.3}  & \num{5.6}\\
+\SI{500}{k} & \SI{1}{k} & \SI{1.28}{\nano\second} & \SI{0.79}{\nano\second} & \num{1.62} & \num{7.6}  & \num{8.9}\\
+\SI{600}{k} & \SI{1}{k} & \SI{1.61}{\nano\second} & \SI{0.82}{\nano\second} & \num{1.97} & \num{9.5}  & \num{9.2}\\
+\SI{700}{k} & \SI{1}{k} & \SI{2.27}{\nano\second} & \SI{0.98}{\nano\second} & \num{2.31} & \num{13.5} & \num{11.1}\\
+\SI{800}{k} & \SI{1}{k} & \SI{2.32}{\nano\second} & \SI{1.36}{\nano\second} & \num{1.71} & \num{13.8} & \num{15.3}\\
+\SI{900}{k} & \SI{1}{k} & \SI{2.63}{\nano\second} & \SI{1.34}{\nano\second} & \num{1.96} & \num{15.6} & \num{15.1}\\
+\SI{1}{m}  & \SI{1}{k} & \SI{3.15}{\nano\second} & \SI{1.54}{\nano\second} & \num{2.05} & \num{18.7} & \num{17.3}\\\hline
+\end{tabular}
+    \caption{How 1 k insert and delete operations scale over time with the
+    growth of list size. SLL stands for Singly Linked List while DLL stands for
+    Doubly linked lists}
+    \label{tab:growth}
+    \end{table}
+
+%     In figure \ref{fig:fig1} one can read that the size of the appended list
+%     does not affect the overall performance. It is the size of the prepended list that is critical. 
+
+    \clearpage
+    \section*{Discussion}
+    % Deleting a node requires one to find the previous node of the node to
+    % be deleted and then update the next-field so that it point to correct next
+    % node. In order to do so the following pre-step is required -- copying the
+    % reference to the next node held by the node that is to be deleted. 
+    % Since a singly linked list only permits uni-directional traversal,
+    % updating the previous nodes next field
+    % the proc
+    % requires 
+
+Accessing elements in a doubly linked list (DLL) is more efficient when compared to a
+singly linked (SLL). As the benchmark shows, DLL is
+approximately twice as fast. 
+The time complexity of accessing a node at a given position 
+is constant $O(1)$ if the reference to the node is given, as when editing the
+head of the list. In the case were the node is known only by the value of the data it
+holds or its position in the list (as in the benchmarking case), the time complexity 
+increases to $O(n)$ in both SLL and DLL. Since the node has to be found by
+traversing the list. With DLL, both forward and backward traversal is possible 
+while SLL only permits uni-direction traversal. As a consequence, SLL has to 
+traverse the list once more if editing is request between head and tail but not
+for editing the head nor adding a new tail. A pushfirst!() or push!() does not
+require a retraversal, nor does pop!().
+Therefore, adding an item to the beginning of a list does not have a negative
+effect on SLL.  
+
+The core issue is that to update a list, one has to obtain the 
+reference to the node that is before the location that is to be amended. 
+Updating the references themselves is a
+constant time operation, so the real issue is how fast the algorithm can 
+find that previous node. 
+
+\subsubsection*{Room for improvement}
+Adding a field that keeps track of the reference to the tail would enhance the 
+performance of the push!(), pop!() and append!() operations on lists, regardless of how
+their nodes are linked. All three involving the tail. 
+The time complexity would change to constant time
+$O(n)$.  Not maintaining a reference to the tail requires a time-cost proportional to the 
+size of the list. So why not add an extra field? 
+
+\end{document}
