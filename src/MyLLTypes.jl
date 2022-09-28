@@ -29,7 +29,7 @@ end
 
 mutable struct SinglyLinkedList{T} <: MyBasicLinkedList{T}
     head::Union{Nothing, SingleNode{T}}
-    n::Int
+    n::Int64
 end
 
 mutable struct DoublyLinkedList{T} <: MyBasicLinkedList{T}

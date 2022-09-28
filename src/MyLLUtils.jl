@@ -127,7 +127,6 @@ function popat!(dll::DoublyLinkedList{T}, position::Int64) where {T}
     position <= dll.n ||
     throw(ArgumentError("Position $position exceed list length of $(dll.n)"))
 
-
     if position == 1
         return popfirst!(dll)
     elseif position == dll.n
