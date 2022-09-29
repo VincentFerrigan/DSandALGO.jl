@@ -23,13 +23,13 @@ mutable struct HP35
 
         if stacktype == :DYNAMICSTACK
             new(clean_rpn_stringtovector(expression), 0, 
-			MyStacks.DynamicStack(), rxOperators, rxOperands, rxSpec)
+			MyStacks.DynamicStack{Int}(), rxOperators, rxOperands, rxSpec)
 		elseif stacktype == :STATICSTACK 
             new(clean_rpn_stringtovector(expression), 0, 
-			MyStacks.StaticStack(), rxOperators, rxOperands, rxSpec)
+			MyStacks.StaticStack{Int}(), rxOperators, rxOperands, rxSpec)
 		elseif stacktype == :LISTSTACK
             new(clean_rpn_stringtovector(expression), 0, 
-			MyStacks.SinglyLLStack(), rxOperators, rxOperands, rxSpec)
+			MyStacks.SinglyLLStack{Int}(), rxOperators, rxOperands, rxSpec)
 		else
 			throw(ArgumentError("Unknown Stack Type: $stacktype"))
         end

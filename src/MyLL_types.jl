@@ -4,6 +4,7 @@
 # Types
 abstract type MyAbstractNode{T} end
 abstract type MyLinkedListNode{T} <: MyAbstractNode{T} end
+
 abstract type MyAbstractLinkedList{T} end
 abstract type MyBasicLinkedList{T} <: MyAbstractLinkedList{T} end
 abstract type MyImprovedLinkedList{T} <: MyAbstractLinkedList{T} end

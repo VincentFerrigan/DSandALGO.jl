@@ -3,7 +3,7 @@
 # Utils for MyLL module in MyLL.jl
 
 # Utils
-length(ll::MyAbstractLinkedList{T}) where {T} = ll.n
+length(ll::MyBasicLinkedList{T}) where {T} = ll.n
 
 function isempty(ll::MyBasicLinkedList{T}) where {T} 
     ll.head === nothing ? true : false
@@ -11,7 +11,7 @@ end
 
 # # TODO
 # # Krockade en del. Vet inte riktigt varför
-function show(io::IO, ll::MyAbstractLinkedList)
+function show(io::IO, ll::MyBasicLinkedList)
     for data in ll
         print(data, " ")
     end

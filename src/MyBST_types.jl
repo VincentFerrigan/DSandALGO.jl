@@ -2,21 +2,22 @@
 # Types for MyBST module in MyBST.jl
 
 # Types
-abstract type MyAbstractTree{T} end
-abstract type MyBinaryTree{T} <: MyAbstractTree{T} end
-abstract type MyAbstractTreeNode{T} end
+abstract type MyAbstractTree{K, V} end
+abstract type MyBinaryTree{K, V} <: MyAbstractTree{K, V} end
+abstract type MyAbstractTreeNode{K, V} end
 
-mutable struct BSTree{T} <: MyBinaryTree{T} # BinarySearchTree
-    root::Union{Nothing, BTNode{T}}
+mutable struct BTNode{K, V} <:MyAbstractTreeNode{K, V} #BinaryTreeNode
+    key::K
+    value::V
+    left::Union{BTNode{K, V}, Nothing}
+    right::Union{BTNode{K, V}, Nothing}
+end
+
+mutable struct BTree{K, V} <: MyBinaryTree{K, V} # BinaryTree
+    root::Union{Nothing, BTNode{K, V}}
     # depth::Int
 end
-mutable struct BTNode{T} <:MyAbstractTreeNode{T} #BinaryTreeNode
-    data::T
-    left::Union{BTNode{T}, Nothing}
-    right::Union{BTNode{T}, Nothing}
-end
-
 
 # Outer constructs
-BSTree{T}() where {T} = BSTree{T}(nothing)
-# BSTree{T}() where {T} = BSTree{T}(nothing, 0)
+BTree{K, V}() where {K, V} = BTree{K, V}(nothing)
+# BTree{T}() where {T} = BTree{T}(nothing, 0)
