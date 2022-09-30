@@ -83,50 +83,39 @@ function lookup(node::BTNode{K,V}, key::K) where {K,V}
     end
 end
 
-
-# # Base.IteratorSize(_::BTree{K, V}) = Base.SizeUnknown where {K,V}
-# function iterate(tree::BTree{K,V}, node::BTNode{K,V} = tree.root) where {K,V} 
-#     node === nothing ? nothing : (node, push!(SinglyLLStack{BTNode{K, V}}(), node))
-# end
-
 function iterate(tree::BTree{K, V}) where {K, V}
     node = tree.root
     node === nothing ? nothing : (node, push!(SinglyLLStack{BTNode{K, V}}(), node))
 end
 
-# function iterate(node::BTNode{K, V}) where {K, V}
-#     node === nothing ? nothing : (node, push!(SinglyLLStack{BTNode{K, V}}(), node))
-# end
-
 function iterate(_::BTree{K, V}, stack) where {K, V}
-    # node = pop!(stack)
     node = MyStacks.peek(stack)
-
-    if node !== nothing 
-        if node.left !== nothing
-            return (node.left, MyStacks.push!(stack, node.left))
-        else
-            println("är jag ?")
-            # MyStacks.pop!(stack)
-            if node.right !== nothing
-                println("är jag här?")
-                return (node.right, stack)
-                # return (node.right, MyStacks.push!(stack, node.right))
-            else
-                println("är jag här här?")
-                MyStacks.pop!(stack)
-                while MyStacks.peek(stack) !== nothing
-                    node = MyStacks.peek(stack).right
-                    node.right !== nothing && return (node, stack)
-                end
-                # MyStacks.pop!(stack)
-            end
-            return nothing
-        end
+    if node === nothing 
+        # println("nothing")
+        return nothing
+    elseif node.left !== nothing
+        # println("go left")
+        return (node.left, MyStacks.push!(stack, node.left))
     else
-        # what?:what?
+        # println("LEAF!, Backtrack with pop")
+        while node !== nothing
+            if node.right !== nothing
+                # println("go right after pop and push right")
+                MyStacks.pop!(stack)
+                return (node.right, MyStacks.push!(stack, node.right))
+            elseif node.left !== nothing
+                # println("pop! elseifleft")
+                MyStacks.pop!(stack)
+                node =  MyStacks.peek(stack) 
+            else
+                # println("LEAF!, Backtrack with popelse")
+                MyStacks.pop!(stack)
+                node =  MyStacks.peek(stack) 
+            end
+        end
+        # println("nothing after pop")
+        return nothing
     end
-    return nothing
 end
 
 function isempty(tree::BTree{K,V}) where {K,V}
@@ -137,12 +126,12 @@ function show(io::IO, node::BTNode{K,V}) where {K,V}
     print(" key: ", node.key, " => value: ", node.value)
 end
 
-# function show(tree::BTree{K, V}, node::Union{BTNode{K, V}, Nothing} = tree.root) where {K, V}
-#     # node === nothing && println("---<empty>---") && return
-#     println("ROOT")
-#     print_tree(node, 0)
-#     println("DONE")
-# end
+function print_tree(tree::BTree{K, V}, node::Union{BTNode{K, V}, Nothing} = tree.root) where {K, V}
+    node === nothing && println("---<empty>---") && return
+    println("ROOT")
+    print_tree(node, 0)
+    println("DONE")
+end
 
 function print_tabs(numtabs::Int64)
     for i = 1:numtabs
@@ -159,8 +148,6 @@ function print_tree(node::Union{BTNode{K,V},Nothing}, level::Int64) where {K,V}
 
     print_tabs(level)
     println(node) # Should work thanks to show
-    # println("key = ", node.key, "")
-    # println("value = ", node.value)
 
     print_tabs(level)
     println("LEFT")
@@ -173,19 +160,19 @@ function print_tree(node::Union{BTNode{K,V},Nothing}, level::Int64) where {K,V}
     print_tabs(level)
     println("LEAF")
 end
-# function isleaf()
 
-# ## vet inte riktigt. En vector av tuples vore något!? Hur beskriva detta?
-# function createBST(v::Vector{K, V}) where {K, V}
-#     # length(v) == 0 && BTree{K, V}()
-#     length(v) == 0 && return nothing
+## vet inte riktigt. En vector av tuples vore något!? Hur beskriva detta?
+function createBST(v::Vector{Tuple{K, V}}) where {K, V}
+    # length(v) == 0 && BTree{K, V}()
+    length(v) == 0 && return nothing
 
-#     # sort list with some your sorting algorithms??
-#     # I suggest insertionsort if the vector is already partially sorted
+    # sort list with some your sorting algorithms??
+    # I suggest insertionsort if the vector is already partially sorted
 
-#     bst = BTree{K, V}()
-#     for item ∈ v
-#         add!(bst, item[1], item[2])
-#     end
-#     return bst
-# end
+    bst = BTree{K, V}()
+    # bst = BTree{T}()
+    for item ∈ v
+        add!(bst, item[1], item[2])
+    end
+    return bst
+end
