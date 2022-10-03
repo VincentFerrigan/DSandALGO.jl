@@ -3,38 +3,46 @@
 
 # Utils
 
+isempty(tree::BTree{K, V}) where {K, V} = isempty(tree.root)
+
+isempty(node::Union{BTNode{K, V}, Nothing}) where {K,V} = node === nothing ? true : false
+
+size(tree::BTree{K, V}) where {K, V} = size(tree.root)
+
+size(node::Union{BTNode{K, V}, Nothing}) where {K,V} = isempty(node) ? 0 : node.n
+
 """
     add!(node::BTtree{K, V}, key::K, value::V)
 
 Adds a new node (leaf) to the BTree that maps given key to value.
 If given key already present, the value that is maped to it gets updated,
 with given value.
+aka put!()
 
 Returns the reference to the new/updated node
 
 # Open Issues:
-## Should key and value come in pairs, as in tuples? Should method
-## return ref to tree instead of updated/newly created node?
+## Should key and value come in pairs, as in tuples? 
+## Will method return ref to tree instead of updated/newly created node?
 
 # Arguments
 - `node::BTtree{K, V}` : xxxxx
 - `key::K` : xxxx
 - `value::V` : xxxx
 """
-function add!(tree::BTree{K,V}, key::K, value::V) where {K,V}
-    if isempty(tree)
-        tree.root = BTNode{K,V}(key, value, nothing, nothing)
-    else
-        add!(tree.root, key, value)
-    end
+function add!(tree::BTree{K, V}, key::K, value::V) where {K,V} # aka put!()
+    tree.root = add!(tree.root, key, value)
+    tree
 end
 
 """
     add!(node::BTNode{K, V}, key::K, value::V)
 
 Adds a new node (leaf) to the BTree of given `node`. 
-The new node maps given key to value. If given key already present, the value
-that is maped to it gets updated. 
+The new node maps/associates given key to value. If given key already present, the value
+that is maped/associated to it gets updated. 
+aka put!()
+
 Returns the reference to the new/updated node 
 
 # Arguments
@@ -42,22 +50,26 @@ Returns the reference to the new/updated node
 - `key::K` : xxxx
 - `value::V` : xxxx
 """
-function add!(node::BTNode{K,V}, key::K, value::V) where {K,V}
-    if key == node.key
-        node.value = value
-    elseif key < node.key
-        if node.left === nothing
-            node.left = BTNode{K,V}(key, value, nothing, nothing)
-        else
-            add!(node.left, key, value)
-        end
-    else
-        if node.right === nothing
-            node.right = BTNode{K,V}(key, value, nothing, nothing)
-        else
-            add!(node.right, key, value)
-        end
+function add!(
+    node::Union{BTNode{K, V}, Nothing}, 
+    key::K, 
+    value::V
+    ) where {K,V}
+
+    if isempty(node) 
+        return BTNode{K, V}(key, value, nothing, nothing, 1)
     end
+
+    if key < node.key
+        node.left = add!(node.left, key, value)
+    elseif key > node.key
+        node.right= add!(node.right, key, value)
+    else
+        node.value = value
+    end
+
+    node.n = size(node.left) + size(node.right) + 1
+    return node
 end
 
 """
@@ -65,72 +77,52 @@ end
 
 Find and return the `value`` associated to given `key`.
 The method will return `nothing` if `key`` is not found.
+aka get()
 """
-function lookup(tree::BTree{K,V}, key::K) where {K,V}
-    isempty(tree) && return nothing # or throw exeption??
-    lookup(tree.root, key)
-end
+lookup(tree::BTree{K,V}, key::K) where {K,V} = lookup(tree.root, key)
 
-function lookup(node::BTNode{K,V}, key::K) where {K,V}
-    if key == node.key
-        return node.value
-    elseif key < node.key
-        node.left === nothing && return nothing
+function lookup(node::Union{BTNode{K, V}, Nothing}, key::K) where {K,V}
+    isempty(node) && return nothing
+
+    if key < node.key
         lookup(node.left, key)
-    else
-        node.right === nothing && return nothing
+    elseif key > node.key
         lookup(node.right, key)
+    else
+        return node.value
     end
 end
 
-function iterate(tree::BTree{K, V}) where {K, V}
+function iterate(tree::BTree{K,V}) where {K,V}
     node = tree.root
-    node === nothing ? nothing : (node, push!(SinglyLLStack{BTNode{K, V}}(), node))
+    (node === nothing ? 
+    nothing : 
+    (node, push!(SinglyLLStack{BTNode{K, V}}(), node))
+        )
 end
 
-function iterate(_::BTree{K, V}, stack) where {K, V}
+function iterate(_::BTree{K,V}, stack) where {K,V}
     node = MyStacks.peek(stack)
-    if node === nothing 
-        # println("nothing")
-        return nothing
-    elseif node.left !== nothing
-        # println("go left")
+    isempty(node) && return nothing
+
+    if !(isempty(node.left)) # if node is not nothing i.e. node !== nothing
         return (node.left, MyStacks.push!(stack, node.left))
     else
-        # println("LEAF!, Backtrack with pop")
-        while node !== nothing
-            if node.right !== nothing
-                # println("go right after pop and push right")
+        while !(isempty(node)) # or !(isempty(node)) instead of while node !== nothing
+            if !(isempty(node.right)) # istead of if node.right !== nothing
                 MyStacks.pop!(stack)
                 return (node.right, MyStacks.push!(stack, node.right))
-            elseif node.left !== nothing
-                # println("pop! elseifleft")
-                MyStacks.pop!(stack)
-                node =  MyStacks.peek(stack) 
             else
-                # println("LEAF!, Backtrack with popelse")
                 MyStacks.pop!(stack)
-                node =  MyStacks.peek(stack) 
+                node = MyStacks.peek(stack)
             end
         end
-        # println("nothing after pop")
         return nothing
     end
-end
-
-function isempty(tree::BTree{K,V}) where {K,V}
-    tree.root === nothing ? true : false
 end
 
 function show(io::IO, node::BTNode{K,V}) where {K,V}
     print(" key: ", node.key, " => value: ", node.value)
-end
-
-function print_tree(tree::BTree{K, V}, node::Union{BTNode{K, V}, Nothing} = tree.root) where {K, V}
-    node === nothing && println("---<empty>---") && return
-    println("ROOT")
-    print_tree(node, 0)
-    println("DONE")
 end
 
 function print_tabs(numtabs::Int64)
@@ -139,7 +131,21 @@ function print_tabs(numtabs::Int64)
     end
 end
 
-function print_tree(node::Union{BTNode{K,V},Nothing}, level::Int64) where {K,V}
+function print_tree(tree::BTree{K,V}, 
+    node::Union{BTNode{K, V}, Nothing} = tree.root
+    ) where {K, V}
+
+    node === nothing && println("---<empty>---") && return
+    println("ROOT")
+    print_tree(node, 0)
+    println("DONE")
+end
+
+function print_tree(
+    node::Union{BTNode{K,V},Nothing}, 
+    level::Int64
+    ) where {K,V}
+
     if node === nothing
         print_tabs(level)
         println("---<empty>---")
@@ -161,6 +167,24 @@ function print_tree(node::Union{BTNode{K,V},Nothing}, level::Int64) where {K,V}
     println("LEAF")
 end
 
+# should this even be here? Maybe just as benchfunction???
+function createBST(v::Vector{V}) where V
+    # length(v) == 0 && BTree{K, V}()
+    length(v) == 0 && return nothing
+
+    # sort list with some your sorting algorithms??
+    # I suggest insertionsort if the vector is already partially sorted
+    keys = Vector(1:length(v))
+    shuffle!(keys)
+
+    bst = BTree{eltype(keys), V}()
+
+    for key ∈ keys
+        add!(bst, key, v[key])
+    end
+    return bst
+end
+
 ## vet inte riktigt. En vector av tuples vore något!? Hur beskriva detta?
 function createBST(v::Vector{Tuple{K, V}}) where {K, V}
     # length(v) == 0 && BTree{K, V}()
@@ -169,8 +193,7 @@ function createBST(v::Vector{Tuple{K, V}}) where {K, V}
     # sort list with some your sorting algorithms??
     # I suggest insertionsort if the vector is already partially sorted
 
-    bst = BTree{K, V}()
-    # bst = BTree{T}()
+    bst = BTree{K,V}()
     for item ∈ v
         add!(bst, item[1], item[2])
     end

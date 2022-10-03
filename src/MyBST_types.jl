@@ -11,10 +11,11 @@ mutable struct BTNode{K, V} <:MyAbstractTreeNode{K, V} #BinaryTreeNode
     value::V
     left::Union{BTNode{K, V}, Nothing}
     right::Union{BTNode{K, V}, Nothing}
+    n::Int64 # Size/length of the tree
 end
 
 mutable struct BTree{K, V} <: MyBinaryTree{K, V} # BinaryTree
-    root::Union{Nothing, BTNode{K, V}}
+    root::Union{BTNode{K, V}, Nothing}
     # depth::Int
 end
 
