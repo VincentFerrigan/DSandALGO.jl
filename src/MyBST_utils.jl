@@ -9,7 +9,11 @@ isempty(node::Union{BTNode{K, V}, Nothing}) where {K,V} = node === nothing ? tru
 
 size(tree::BTree{K, V}) where {K, V} = size(tree.root)
 
-size(node::Union{BTNode{K, V}, Nothing}) where {K,V} = isempty(node) ? 0 : node.n
+size(node::Union{Nothing, BTNode{K, V}}) where {K,V} = isa(node, Nothing) ? 0 : node.n
+
+length(tree::BTree{K, V}) where {K, V} = size(tree.root)
+# length(node::Union{BTNode{K, V}, Nothing}) where {K,V} = isa(node, Nothing) ? 0 : node.n
+
 
 """
     add!(node::BTtree{K, V}, key::K, value::V)
@@ -30,7 +34,11 @@ Returns the reference to the new/updated node
 - `key::K` : xxxx
 - `value::V` : xxxx
 """
-function add!(tree::BTree{K, V}, key::K, value::V) where {K,V} # aka put!()
+function add!(
+    tree::BTree{K, V}, 
+    key::K, value::V
+    ) where {K,V} # aka put!()
+    
     tree.root = add!(tree.root, key, value)
     tree
 end
@@ -56,8 +64,9 @@ function add!(
     value::V
     ) where {K,V}
 
-    if isempty(node) 
-        return BTNode{K, V}(key, value, nothing, nothing, 1)
+    if isa(node, Nothing)  
+        node = BTNode{K, V}(key, value, nothing, nothing, 1)
+        return node
     end
 
     if key < node.key
@@ -82,7 +91,7 @@ aka get()
 lookup(tree::BTree{K,V}, key::K) where {K,V} = lookup(tree.root, key)
 
 function lookup(node::Union{BTNode{K, V}, Nothing}, key::K) where {K,V}
-    isempty(node) && return nothing
+    isa(node, Nothing) && return nothing
 
     if key < node.key
         lookup(node.left, key)
@@ -101,7 +110,7 @@ function iterate(tree::BTree{K,V}) where {K,V}
         )
 end
 
-function iterate(_::BTree{K,V}, stack) where {K,V}
+function iterate(_::BTree{K, V}, stack) where {K,V}
     node = MyStacks.peek(stack)
     isempty(node) && return nothing
 
@@ -123,6 +132,28 @@ end
 
 function show(io::IO, node::BTNode{K,V}) where {K,V}
     print(" key: ", node.key, " => value: ", node.value)
+end
+
+function binary_search(
+    tree::BTree{Int64, V}, 
+    value::V,
+    low = 1,
+    high = length(tree)
+    ) where {V}
+
+    while low <= high
+        median = Int(floor((low + high)/2)) # median
+        lookupvalue = lookup(tree, median)
+        if isa(lookupvalue, Nothing)
+            return nothing
+        elseif lookupvalue == value 
+            return median
+        elseif lookupvalue > value
+            high = median - 1
+        else
+            low = median + 1
+        end
+    end
 end
 
 function print_tabs(numtabs::Int64)
@@ -193,7 +224,7 @@ function createBST(v::Vector{Tuple{K, V}}) where {K, V}
     # sort list with some your sorting algorithms??
     # I suggest insertionsort if the vector is already partially sorted
 
-    bst = BTree{K,V}()
+    bst = BTree{K, V}()
     for item ∈ v
         add!(bst, item[1], item[2])
     end

@@ -27,7 +27,7 @@ Contains:
 module MyBST
 
 using Random # for createBST
-import Base: isempty, show, iterate, size 
+import Base: isempty, show, iterate, size, length
 
 include("MyStacks.jl")
 using .MyStacks
@@ -37,7 +37,7 @@ include("MyBST_utils.jl")
 
 # include("SortingAlgo.jl")
 # import .SortingAlgo # or using insertionsort?
-export BTree, BTNode, isempty, show, iterate, 
-add!, lookup, createBST, print_tree, print_tabs, size
+export BTree, BTNode, isempty, show, iterate, size, length,
+add!, lookup, createBST, print_tree, binary_search
 
 end # end module

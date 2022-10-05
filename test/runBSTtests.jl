@@ -20,6 +20,7 @@ using .SortingAlgo
     add!(testtree, 5, "fem") 
     add!(testtree, 5, "five")
     @test size(testtree) == 2
+    @test length(testtree) == 2
     @test lookup(testtree, 5) === "five"
 end
 
@@ -33,9 +34,11 @@ end
     add!(testtree2, 0, "noll")
     add!(testtree2, 9, "nio")
     @test size(testtree2) == 5
+    @test length(testtree2) == 5
     @test lookup(testtree2, 0) == "noll"
     add!(testtree2, 4, "fyra")
     @test size(testtree2) == 6
+    @test length(testtree2) == 6
     @test lookup(testtree2, 10) === nothing
     @test lookup(testtree2, 4) == "fyra"
 end
@@ -47,4 +50,5 @@ end
     for i in eachindex(testvector)
         @test lookup(testbst, i) == testvector[i]
     end
+    @test length(testbst) == length(testvector)
 end

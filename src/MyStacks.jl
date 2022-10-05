@@ -18,6 +18,9 @@ Contains:
 - stacksize
 - stackceiling
 - resizestack
+
+## TODO: 
+- restructure into _types and _utils
 """
 module MyStacks
 include("MyLL.jl")
