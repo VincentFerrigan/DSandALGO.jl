@@ -1,34 +1,35 @@
-
 # MyLL_utils.jl
 # Utils for MyLL module in MyLL.jl
 
 # Utils
 length(ll::MyBasicLinkedList{T}) where {T} = ll.n
 
-function isempty(ll::MyBasicLinkedList{T}) where {T} 
+function isempty(ll::MyAbstractLinkedList{T}) where {T} 
     ll.head === nothing ? true : false
 end
 
 # # TODO
 # # Krockade en del. Vet inte riktigt varför
-function show(io::IO, ll::MyBasicLinkedList)
+function show(io::IO, ll::MyAbstractLinkedList)
     for data in ll
         print(data, " ")
     end
 end
 
 # Hur använda på bästa sätt? Går det att använda för findtail?
-function iterate(ll::MyBasicLinkedList{T}, 
-    node::Union{MyLinkedListNode{T}, Nothing} = ll.head) where {T}
-    #     node === nothing ? nothing : (node.data, node.next)
-    # elseif isa(ll, DoublyLinkedList)
-    #     node === nothing ? nothing : (node.data, node.previous, node.next)
-    # end
-    # return node
+function iterate(
+    ll::MyBasicLinkedList{T}, 
+    node::Union{MyLinkedListNode{T}, Nothing} = ll.head
+    ) where {T}
+
     node === nothing ? nothing : (node.data, node.next)
 end
 
-function pushfirst!(sll::SinglyLinkedList{T}, item::T) where {T} ## how to do if items...
+function pushfirst!(
+    sll::Union{SinglyLinkedList{T}, ISinglyLinkedList{T}}, 
+    item::T
+    ) where {T} ## how to do if items...
+
     if isempty(sll)
         sll.head = SingleNode{T}(item, nothing)
     else
@@ -40,7 +41,11 @@ function pushfirst!(sll::SinglyLinkedList{T}, item::T) where {T} ## how to do if
     return sll
 end
 
-function pushfirst!(dll::DoublyLinkedList{T}, item::T) where {T}
+function pushfirst!(
+    dll::Union{DoublyLinkedList{T}, IDoublyLinkedList{T}}, 
+    item::T
+    ) where {T}
+
     if isempty(dll)
         dll.head = DoubleNode{T}(item, nothing, nothing)
     else
@@ -60,7 +65,7 @@ Removes the item from the beginning of the list
 # Arguments
 - `ll::MyAbstractLinkedList` : List of type SinglyLinkedList and DoublyLinkedList
 """
-function popfirst!(ll::MyBasicLinkedList{T}) where T
+function popfirst!(ll::MyAbstractLinkedList{T}) where T
     ll.n == 0  &&  throw(ArgumentError("List is empty"))
 
     item = ll.head.data
@@ -68,8 +73,11 @@ function popfirst!(ll::MyBasicLinkedList{T}) where T
     ll.head = oldhead.next
     ll.n -= 1
     if ll.n == 0 
-        ll.head = nothing 
-    elseif isa(ll, DoublyLinkedList)
+        ll.head = nothing
+        if isa(ill, MyImprovedLinkedList) 
+            ll.head = ll.tail = nothing
+        end
+    elseif isa(ll, DoublyLinkedList) || isa(ll, IDoublyLinkedList)
         ll.head.previous = nothing
     end
     return item
@@ -98,6 +106,29 @@ function push!(dll::DoublyLinkedList{T}, item::T) where {T}
     return dll
 end
 
+function push!(isll::ISinglyLinkedList{T}, item::T) where {T}
+    if isempty(isll)
+        isll.head = isll.tail = SingleNode{T}(item, nothing)
+    else
+        oldtail = isll.tail
+        oldtail.next = SingleNode{T}(item, nothing)
+    end
+    isll.n += 1
+    return isll
+end
+
+function push!(idll::IDoublyLinkedList{T}, item::T) where {T}
+    if isempty(idll)
+        idll.head = idll.tail = DoubleNode{T}(item, nothing, nothing)
+    else
+        oldtail = idll.tail
+        newtail = DoubleNode{T}(item, oldtail, nothing)
+        oldtail.next = newtail 
+    end
+    idll.n += 1
+    return idll
+end
+
 # # TODO: tests
 function pop!(ll::MyBasicLinkedList{T}) where {T}
     ll.n == 0  &&  throw(ArgumentError("List is empty"))
@@ -116,13 +147,34 @@ function pop!(ll::MyBasicLinkedList{T}) where {T}
     return item
 end
 
+function pop!(ill::MyImprovedLinkedList)
+    ill.n == 0  &&  throw(ArgumentError("List is empty"))
+    oldtail = ill.tail
+    item = oldtail.data
+    if isa(ill, IDoublyLinkedList)
+        newtail = oldtail.previous
+        newtail.next = nothing
+    elseif isa(ill, ISinglyLinkedList)
+        newtail = findnode_withnext(ill, oldtail)
+        @assert newtail !== nothing
+        newtail.next = nothing
+    end
+    ll.n -= 1
+    if ill.n == 0 ill.head = nothing end
+    return item
+end
+
 """
     popat!(dll::DoublyLinkedList{T}, position::Int64)
 
 Removes item at given position in the list. 
 Returns data of item or throws an error if position exceeds length of list. 
 """
-function popat!(dll::DoublyLinkedList{T}, position::Int64) where {T}
+function popat!(
+    dll::Union{DoublyLinkedList{T}, IDoublyLinkedList{T}},
+    position::Int64
+    ) where {T}
+
     dll.n == 0  &&  throw(ArgumentError("List is empty"))
     position <= dll.n ||
     throw(ArgumentError("Position $position exceed list length of $(dll.n)"))
@@ -159,10 +211,18 @@ end
 Removes item at given position in the list. 
 Returns data of item or throws an error if position exceeds length of list. 
 """
-function popat!(sll::SinglyLinkedList{T}, position::Int64) where {T}
+function popat!(
+    sll::Union{SinglyLinkedList{T}, ISinglyLinkedList{T}}, 
+    position::Int64
+    ) where {T}
+
     sll.n == 0  &&  throw(ArgumentError("List is empty"))
-    position <= sll.n ||
-    throw(ArgumentError("Position $position exceed list length of $(sll.n)"))
+
+    (position <= sll.n || 
+    throw(ArgumentError(
+        "Position $position exceed list length of $(sll.n)"
+        ))
+    )
 
 
     if position == 1
@@ -198,18 +258,18 @@ Returns data of item or `nothing` if no such item is found.
 - what if previous or next are nothings?
 - test
 """
-function removeitem!(ll::MyBasicLinkedList{T}, item::T) where {T}
+function removeitem!(ll::MyAbstractLinkedList{T}, item::T) where {T}
     ll.n == 0  &&  throw(ArgumentError("List is empty"))
     node = findfirst(ll, item)
     if isa(node, Nothing)
         return nothing
-    elseif isa(ll, DoublyLinkedList)
+    elseif isa(ll, DoublyLinkedList) || isa(ll, IDoublyLinkedList)
         previousnode = node.previous
         nextnode = node.next
         previousnode.next = nextnode
         nextnode.previous = previousnode
         # finish? Do test. Is the above correct? 
-    elseif isa(ll, SinglyLinkedList)
+    elseif isa(ll, SinglyLinkedList) || isa(ll, ISinglyLinkedList)
         previousnode = findnode_withnext(ll, node)
         nextnode = node.next
         previousnode.next = nextnode
@@ -249,7 +309,7 @@ function peekfirst(ll::MyAbstractLinkedList)
     return item
 end
 
-function findtail(ll::MyBasicLinkedList{T}) where {T}
+function findtail(ll::MyAbstractLinkedList{T}) where {T}
     # short-curcuit condition
     isempty(ll) && throw(BoundsError())
 
@@ -313,7 +373,7 @@ function sllistfromvector(v::Vector{T}) where {T}
     # short-circuit return conditions
     length(v) == 0 && return SinglyLinkedList{T}()
 
-    newsll= SinglyLinkedList{T}()
+    newsll = SinglyLinkedList{T}()
     
     # Bör finnas ett bättre sätt. Typ mha av iterate grejen
     i = length(v)

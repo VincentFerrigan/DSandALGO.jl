@@ -1,0 +1,467 @@
+   
+%! Linked Lists
+%! Author = Vincent Ferrigan <ferrigan@kth.se>
+%! Date = 2022-09-21
+
+
+% Preamble
+\documentclass[a4paper, 11pt]{article}
+% Packages
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{fontspec}
+\usepackage{polyglossia}
+\usepackage{microtype}
+\setmonofont{DejaVu Sans Mono}[Scale=MatchLowercase]
+\usepackage{listings}
+\usepackage{minted}
+\usepackage{latexsym,exscale,stmaryrd,amsmath,amssymb}
+\newtheorem{definition}{Definition}
+\usepackage{unicode-math}
+\usepackage{lmodern}
+\usepackage{enumitem}
+\usepackage{subcaption}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{multirow}
+% \usepackage{paralist}
+\usepackage{enumitem}
+
+%% Om jag vill referera till ett kod verb av något slag, som void null Int etc
+% \usepackage{tcolorbox}
+% \newtcbox{\somestuffstyle}{on line,boxrule=0pt,boxsep=0pt,colback=lightgray,top=1pt,bottom=1pt,left=1pt,right=1pt,arc=0pt,fontupper=\ttfamily}
+
+% \usepackage{natbib}
+% \usepackage[nottoc]{tocbibind}
+\usepackage{xcolor}
+\usepackage{siunitx}
+\usepackage{tikz}
+\usepackage[font=small,labelfont=bf]{caption}
+% Addiding JuliaMono
+\newfontfamily \JuliaMono {JuliaMono-Regular.ttf}[
+    Path      = ./,
+    Extension = .ttf
+    ]
+\newfontface \JuliaMonoMedium{JuliaMono-Regular}
+\setmonofont{JuliaMonoMedium}[
+    Contextuals=Alternate
+]
+
+\title{Trees on stacks and queues\\ \small{ID1021 Algorithms and Data structures}} %%TODO vilken rubricering
+\author{Vincent Ferrigan}
+
+\date{\today}
+
+\begin{document}
+    \maketitle
+    \section*{Introduction}
+    In this paper, the performance and implementation of \emph{binary trees} 
+    was studied and analyzed. A \emph{lookup algorithm} was also compared with
+    the binary search algorithm, which was studied in a previous paper. 
+    The was done through benchmarking -- i.e. comparing the performance of
+    the two data algorithms in terms of managing data. E.g. how well do these
+    algorithms' scale with the size of the input data? 
+    Does the shape of the tree matter? That is, when 
+    constructing a tree, does the order of adding nodes matter?
+
+    The final task was to implement an iterator for traversing a binary tree 
+    based on the \emph{Depth First} approach. Which was implemented using a stack. 
+    The question is, in what order? Inorder, preorder or postorder? 
+    All these three \emph{Traversal Algorithms} where studied. 
+    
+    The authors intent is to reach certain conclusions on the queries that were
+    stated above. 
+    
+    \section*{Methods}
+    All the Data Structures and Algorithms were implemented in \emph{Julia}.
+    The Code was mostly written in \emph{VSCode} and run on \emph{Julia 1.8.0}.
+    Quick-fixes and editing was, however, done in \emph{Vim}
+
+    Some scripts were executed from the \emph{REPL terminal},  while others (e.g.
+    when using data frames, performing benchmarks and producing plots) were executed from the
+    \emph{Jupyter Notebook}. 
+    
+    \subsection*{Tools and packages}
+    All tests were performed with the built-in package \emph{Test} and iterative development
+    was made possible through \emph{Revise.jl} -- the latter operates by continuously
+    scanning the source code for changes, even changes in function defined in
+    other modules (including in different files).
+    
+    The benchmark data was constructed, manipulated and visualized through
+    \emph{DataFrames.jl} and \emph{Plots.jl}, while 
+    readable formatting was produced through \emph{Formatting.jl} and \emph{Unitful.jl}. 
+
+    \subsection*{The JIT}
+    Julia has a just-in-time (JIT) compilation -- which means that the code is
+    dynamically compiled during program run time.     
+    It takes time for the JIT compiler to 
+    initially load the code and compile it. Therefore, in order not to skew the
+    results, \emph{warmup calls} were performed on certain parts of the code
+    before they were benchmarked. This to avoid including 
+    compilation time. The warmup calls were done with the @timed macro prior to
+    benchmarking.
+
+    \section*{The Data Structure}
+    This section briefly describes the key differences between \emph{binary trees} 
+    and other data structures -- such as \emph{linked lists} and \emph{vectors}.
+    For clarity, the reader is given meaning to the terms dealing 
+    with binary trees -- not only with descriptions of the
+    ''tree-terms'' used in this paper, but also with a specification 
+    of the overall implementation in Julia. The reader will also be provided with 
+    code examples when necessary.
+
+    \subsection*{Conventions}
+    It is important for the reader to note that Julia uses a one-based-numbering
+    convention, (i.e. array indices start from 1 to N) and that one dimensional
+    arrays are called vectors. 
+    For consistency, the author has chosen to refer to one dimensional
+    arrays as vectors and apply the 1-based convention when numbering
+    sequences of elements more broadly. 
+    
+    Unlike other languages, Julia objects cannot be ''null'' by default. The
+    equivalent of \lstinline[language=Python]{None} in Python or
+    \lstinline[language=C]{NULL} and \lstinline[language=C]{void} in C is
+    \mintinline{julia}{Nothing}. The Julia convention is to return the value
+    \mintinline{julia}{nothing}, which is a singleton instance of type
+    \mintinline{julia}{Nothing}, when such a side effect is
+    desired. 
+
+    \subsection*{The Binary Tree}
+    Like \emph{linked lists}, \emph{binary trees} are dynamic data structures that, unlike \emph{vectors}, 
+    do not require to be stored contiguously in memory. They are instead composed of \emph{nodes} 
+    that are linked together by pointers or references. 
+    Like the implementation of linked lists, the tree requires two data structures; one
+    for the actual node and another for the tree, the latter containing a
+    reference that points to the first node. 
+    Each node in the binary tree that was implemented in this paper, contains five parts;
+    % \begin{inparaenum}[i)]
+    \begin{enumerate}[itemsep=1pt]
+        \item a \mintinline{julia}{key} of any type \mintinline{julia}{K}
+        \item a \mintinline{julia}{value} of any type \mintinline{julia}{V} 
+        that is associated with the key
+        \item a reference (memory address) to the linked node \mintinline{julia}{left}
+        \item a reference (memory address) to the linked node \mintinline{julia}{right} and
+        \item the number of nodes \mintinline{julia}{n} in the tree/subtree. 
+        A number that that includes the node itself as well as all its descendants.
+    \end{enumerate}
+    % \end{inparaenum}
+
+    The fields that contain references to other nodes may point to nothing 
+    which, as previously mentioned, is a singleton instance of type \mintinline{julia}{Nothing}.
+    \autoref{code:node} shows how the above-mentioned nodes were implemented in Julia. 
+    \begin{figure}[H]
+        \centering
+    \begin{minted}[
+        % label=codeexample, 
+        linenos, 
+        % breaklines, 
+        % frame = single, 
+        fontsize=\footnotesize]{julia}
+mutable struct BTNode{K, V} <:MyAbstractTreeNode{K, V} 
+    key::K
+    value::V
+    left::Union{BTNode{K, V}, Nothing}
+    right::Union{BTNode{K, V}, Nothing}
+    n::Int64 
+end
+    \end{minted}
+    \caption{Node example for Binary Search Trees in Julia}
+    \label{code:node}
+    \end{figure}
+
+    Since the fields \mintinline{julia}{left} and \mintinline{julia}{right} only sometimes 
+    contain a reference to another node, the data type \mintinline{julia}{Union} was used for their 
+    field declaration -- a union that includes the composite
+    data type (for the node in question) and `nothing`.
+
+    The first node in the tree is conventionally called \emph{the root}, as in the root of the tree.
+    The tree therefore usually only contains one item, the reference to the first node, the root that is.
+    See \autoref{code:binarytree}. Apart from the root, 
+    each node in a binary tree is pointed to by just one other node, which is called its \emph{parent}. 
+    At most, every node can have two children, the first is called the \emph{left child}
+    and the second is called the \emph{right child}.  
+    
+    \begin{figure}[H]
+        \centering
+    \begin{minted}[
+        % label=codeexample, 
+        linenos, 
+        % breaklines, 
+        % frame = single, 
+        fontsize=\footnotesize]{julia}
+mutable struct BTree{K, V} <: MyBinaryTree{K, V}
+    root::Union{Nothing, BTNode{K, V}}
+    # depth::Int
+end
+
+# Outer constructs
+BTree{K, V}() where {K, V} = BTree{K, V}(nothing)
+# BTree{T}() where {T} = BTree{T}(nothing, 0)
+    \end{minted}
+    \caption{A Binary Search Tree in Julia.
+    The commented out code points to the fact that the number of nodes that a tree holds can also be
+    included in a BST implementation.}
+    \label{code:binarytree}
+    \end{figure}
+
+    A node of a tree is called a \emph{leaf} if it has no children. Nodes that
+    have at least one child are called \emph{internal nodes}. 
+    The root is internal node unless it is the only node in the tree, in which case it is a leaf. 
+    The field \mintinline{julia}{root} in the binary tree (as shown in the
+    example in \autoref{code:binarytree})
+    can sometimes contain a reference to nothing, in which case the tree is empty.
+    The tree rooted at the left child
+    of a node is called the \emph{left subtree} of this node, and the tree rooted at the
+    right child of the node is called the \emph{right subtree} of the node.
+    Since each subtree are themselves binary trees. Two nodes with the same 
+    parent are called \emph{siblings}. In this study, the nodes holds neither reference to its parent 
+    nor to its sibling -- which affects the traversal of the tree 
+    (see subsection \hyperref[sec:treetraversal]{Tree Traversal}).
+
+    The binary tree in this paper is ordered as a \emph{Binary Search Tree (BST)}, that is, 
+    the key of a node must be unique and larger than the keys of all nodes in
+    its left subtree and smaller than the keys of all the nodes in its right
+    subtree. The siblings are therefore ordered from left to right.
+
+    The procedure of adding a new item (consisting of a key and its associated value)
+    to the BST requires comparing keys of
+    nodes that already exist in the BST. Starting at the root and moving left
+    if the new items key is smaller than visited node or right if it is larger. 
+    The function written for this procedure, as shown in 
+    \autoref{code:add!}, adds a new node (leaf) that maps
+    given key to value. If the given key is already present, the value that is
+    mapped to it gets updated with given value. This function is recursive in nature and 
+    is therefore implemented with two methods depending on 
+    the data type it receives,  that is if the data type is a tree or a node. 
+    This feature in Julia is known as
+    \emph{multiple dispatch}, which is similar but not equal to \emph{function
+    overloading} in Java and C++. The function name ends with a bang (!) since it
+    mutates the arguments it receives. This name suffix is by convention in Julia.
+
+    \begin{figure}[H]
+        \centering
+    \begin{minted}[
+        % label=codeexample, 
+        linenos, 
+        % breaklines, 
+        % frame = single, 
+        fontsize=\footnotesize]{julia}
+function add!(
+    tree::BTree{K, V}, 
+    key::K, value::V
+    ) where {K,V}
+    
+    tree.root = add!(tree.root, key, value)
+    tree
+end
+
+function add!(
+    node::Union{BTNode{K, V}, Nothing}, 
+    key::K, 
+    value::V
+    ) where {K,V}
+
+    if isa(node, Nothing)  
+        node = BTNode{K, V}(key, value, nothing, nothing, 1)
+        return node
+    end
+
+    if key < node.key
+        node.left = add!(node.left, key, value)
+    elseif key > node.key
+        node.right= add!(node.right, key, value)
+    else
+        node.value = value
+    end
+
+    node.n = size(node.left) + size(node.right) + 1
+    return node
+end
+    \end{minted}
+    \caption{The insert or update function 'add!' in Julia}.
+    \label{code:add!}
+    \end{figure}
+
+    The procedure of locating an item acts similarly to adding one to
+    a BST. 
+    The function, which also consist of two methods, is named 'lookup' (in
+    accordance with the assigned task) and its Julia code is shown in figure
+    \autoref{code:lookup}. The function locates and returns the value associated
+    to given key. The methods return 'nothing' if the given key is not found. 
+    
+    It is this function that is to benchmarked to 
+    a binary search algorithm (see \hyperref[sec:results]{Section Results})
+
+
+    \begin{figure}[H]
+        \centering
+    \begin{minted}[
+        % label=codeexample, 
+        linenos, 
+        % breaklines, 
+        % frame = single, 
+        fontsize=\footnotesize]{julia}
+lookup(tree::BTree{K,V}, key::K) where {K,V} = lookup(tree.root, key)
+
+function lookup(node::Union{BTNode{K, V}, Nothing}, key::K) where {K,V}
+    isa(node, Nothing) && return nothing
+
+    if key < node.key
+        lookup(node.left, key)
+    elseif key > node.key
+        lookup(node.right, key)
+    else
+        return node.value
+    end
+end
+    \end{minted}
+    \caption{The locate function 'lookup' in Julia}
+    \label{code:lookup}
+    \end{figure}
+
+    \subsection*{The Traversal Algorithms}
+    \label{sec:treetraversal}
+    
+    A tree traversal refers to the process of visiting each node in a tree at least once. This 
+    ''visit'' can inquire some kind of action, e.g. accessing each node for printing their 
+    keys and their associated values. The question of order is of same
+    importance as visiting each node only once. Downward or sideways.
+
+    The \emph{Depth-First} approach traverses downwards through each branch of a (sub)tree
+    before backtracking. It is implemented using a \emph{stack}, which will enable 
+    the use of recursion -- since each subtree are themselves binary trees. Compare
+    this to the \emph{Breadth-Frist} approach which visits each node sideways,
+    level-by-level, requiring a \emph{queue} for its implementation.
+    
+    There are a few different orders within the Depth First approach. 
+    
+    
+    % An Inorder traversal produces the infix representation of the expression.
+    % A Postorder traversal produces the postfix representation of the expression. (RPN)
+    % A Preorder traversal produces a representation that is the same as the way
+    % that the programming language Lisp processes arithmetic expressions. (PREFIX)
+    \subsubsection*{Preorder traversal}
+    % Traverses the root node first, then the left and right subtrees respectively.
+    % % #### Tror det var den jag de facto byggde!!! 
+    % NLR (Node Left Right)
+    
+    Preorder (DLR): Read the data of the node, then visit the left
+    subtree/nodes, followed by the right subtree/nodes.
+
+    HÄR KAN DU VISA DIN PRINT TRÄD FUNKTION
+    % 1. Traverse the root node
+    % 2. Traverse the left subtree
+    % 3. Traverse the right subtree
+
+    % It is useful when searching for an element within a BST
+
+    % A preorder traversal is used to create a copy of the tree and is also used To
+    % get prefix expression on a expression tree
+
+    % % a pre-order traversal on a topologically ordered tree is useful for listing
+    % % the dependency before the dependants. Topological ordering has use cases in
+    % % dynamic linking of programs and resolving dependencies as well as processor
+    % % scheduling.
+
+    \begin{figure}[H]
+        \centering
+    \begin{minted}[
+        % label=codeexample, 
+        linenos, 
+        % breaklines, 
+        % frame = single, 
+        fontsize=\footnotesize]{julia}
+# Pretty-Printing
+function show(io::IO, node::BTNode{K,V}) where {K,V}
+    print(" key: ", node.key, " => value: ", node.value)
+end
+
+# Tabbing
+print_tabs(numtabs::Int64) = for i = 1:numtabs print("  ") end
+
+# THe wrapped method to the print tree function
+function print_tree(tree::BTree{K,V}, 
+    node::Union{BTNode{K, V}, Nothing} = tree.root
+    ) where {K, V}
+
+    node === nothing && println("---<empty>---") && return
+    println("ROOT")
+    print_tree(node, 0)
+    println("DONE")
+end
+
+# recursive method to print tree function
+function print_tree(
+    node::Union{BTNode{K,V},Nothing}, 
+    level::Int64
+    ) where {K,V}
+
+    if node === nothing
+        print_tabs(level)
+        println("---<empty>---")
+        return
+    end
+
+    print_tabs(level)
+    println(node)
+    print_tabs(level)
+    println("LEFT")
+    print_tree(node.left, (level += 1))
+
+    print_tabs(level)
+    println("RIGHT")
+    print_tree(node.right, (level += 1))
+
+    print_tabs(level)
+    println("LEAF")
+end
+    \end{minted}
+    \caption{xxxxx}
+    \label{code:print}
+    \end{figure}
+
+    \subsection*{The Traversal Algorithms}
+    \label{sec:treetraversal}
+
+    \subsubsection*{Inorder traversal}
+    % Left Node Right
+    Inorder (LDR): Visit the left subtree/nodes, then read the data of the node,
+    and finally visit the right subtree/nodes.
+
+    % Traverse the left subtree 
+    % Traverse the root node
+    % Traverse the right subtree
+
+    % Resultatet blir att nycklarna skrivs ut i ordning!!
+
+    % Inorder traversal gives nodes (get keys) in ascending order. A variation is RNL where an inorder is reversed, 
+    % in order to get keys in descending order.
+
+
+    \subsubsection*{Postorder traversal}
+    % LRN (Left, Right, Node)
+    Postorder (LRD): Visit the left subtree/nodes, then visit the right
+    subtree/nodes, and finally read the data of the node.
+    
+    % Används vid GC och RPN!!!!!
+    % Used to delete the tree and is also useful to get the postfix expression of
+    % an expression tree (alltså RPN)
+    % % Post-order traversal was also quite popular at some point as part of a
+    % % method of expression evaluation known as Reverse Polish Notation (RPN) or
+    % % postfix notation. RPN is used to express mathematical formulas in such a way
+    % % that there is no need to use brackets to keep the order of precedence. For
+    % % example, using RPN we could represent this mathematical expression:
+    
+
+    % % +towards the
+    % % left-most node. Once it reaches null, it traverses up the tree
+    % % back to the root and then to the right-most node. If it hits a node with
+    % % children, it will traverse through that node’s children from left to right
+    % % and then continue rightwards.
+
+    \section*{Results}
+    \label{sec:results}
+    \section*{Discussion}
+    \label{sec:discussion}
+\end{document}

@@ -19,7 +19,7 @@ length(tree::BTree{K, V}) where {K, V} = size(tree.root)
     add!(node::BTtree{K, V}, key::K, value::V)
 
 Adds a new node (leaf) to the BTree that maps given key to value.
-If given key already present, the value that is maped to it gets updated,
+If given key already present, the value that is mapped to it gets updated,
 with given value.
 aka put!()
 
@@ -156,11 +156,7 @@ function binary_search(
     end
 end
 
-function print_tabs(numtabs::Int64)
-    for i = 1:numtabs
-        print("  ")
-    end
-end
+print_tabs(numtabs::Int64) = for i = 1:numtabs print("  ") end
 
 function print_tree(tree::BTree{K,V}, 
     node::Union{BTNode{K, V}, Nothing} = tree.root
@@ -230,3 +226,134 @@ function createBST(v::Vector{Tuple{K, V}}) where {K, V}
     end
     return bst
 end
+
+# TESTA OM DEN FUNKAR BRA SOM ITERATE
+# Node, Left, Right
+function preorder(
+    tree::BTree{K,V}, 
+    node::Union{BTNode{K, V}, Nothing} = tree.root
+    ) where {K, V}
+
+    (node === nothing ? 
+    nothing : 
+    (node, push!(SinglyLLStack{BTNode{K, V}}(), node))
+        )
+end
+
+# Node, Left, Right
+function preorder(_::BTree{K, V}, stack) where {K,V}
+    node = MyStacks.peek(stack) # peek or pop? 
+    isa(node, Nothing) && return nothing # if stack is empty
+
+    if !isa(node.left, Nothing) 
+        return (node.left, MyStacks.push!(stack, node.left))
+    end
+
+    while !isa(node, Nothing) 
+        if !isa(node.right, Nothing)
+            MyStacks.pop!(stack)
+            return (node.right, MyStacks.push!(stack, node.right))
+        else #LEAF!
+            MyStacks.pop!(stack)
+            node = MyStacks.peek(stack)
+        end
+    end
+    return nothing
+end
+
+# INORDER KOMMER EJ ATT GÅ UTAN KÖÖÖÖÖÖÖÖÖÖÖÖÖ ENL SWEDEWIGGGGGISH
+# # Left, Node, Right
+# # NOT CHANGED YET
+# function inorder(
+#     tree::BTree{K,V}, 
+#     node::Union{BTNode{K, V}, Nothing} = tree.root
+#     ) where {K, V}
+
+#     isa(node, Nothing) && return nothing
+#     stack = MyStacks.SinglyLLStack{BTNode{K, V}}()
+
+#     while !isa(node.left, Nothing) 
+#         push!(stack, node)
+#         node = node.left 
+#     end
+#     return node, push!(stack, node)
+# end
+
+# # INORDER KOMMER EJ ATT GÅ UTAN KÖÖÖÖÖÖÖÖÖÖÖÖÖ ENL SWEDEWIGGGGGISH
+# # Left, Node, Right
+# # NOT CHANGED YET
+# function inorder(
+#     tree::BTree{K, V}, 
+#     stack = MyStacks.SinglyLinkedList{BTNode{K, V}}(tree.root, 1)
+#     ) where {K,V}
+
+#     MyStacks.isempty(stack) && return nothing
+#     node = MyStacks.peek(stack)
+
+#     while !isa(node, Nothing)
+#         MyStacks.push!(stack, node)
+#         node = node.left 
+#     end
+
+#     node = MyStacks.pop!(stack)
+
+#     if isa(node.right, Nothing) && !isa(MyStacks.peek(stack).right, nothing)
+#         return node, MyStacks.push!(stack, node.right)
+#     else
+
+
+#     if !isa(node.left, Nothing)
+#         while !isa(node.left, Nothing) 
+#             MyStacks.push!(stack, node)
+#             node = node.left 
+#         end
+#         return node, stack
+#     elseif !isa(node.right, Nothing) 
+#         MyStacks.push!(stack, node.right)
+#         while !isa(node.left, Nothing) 
+#             MyStacks.push!(stack, node)
+#             node = node.left 
+#         end
+#         return (node, MyStacks.push!(stack, node))
+#     else #LEAF!
+#        MyStacks.pop!(stack)
+#        return (node, stack)
+#     end
+#     return nothing
+# end
+
+# # KOMMER POSTORDER FUNKA MED STACK, ELLER ÄR DET KÖ SOM GÄLLER HÄRMED?
+# # Left, Right, Node
+# # NOT CHANGED YET
+# function postorder(
+#     tree::BTree{K,V}, 
+#     node::Union{BTNode{K, V}, Nothing} = tree.root
+#     ) where {K, V}
+
+#     (node === nothing ? 
+#     nothing : 
+#     (node, push!(SinglyLLStack{BTNode{K, V}}(), node))
+#         )
+# end
+
+# # Left, Right, Node
+# # NOT CHANGED YET
+# function postorder(_::BTree{K, V}, stack) where {K,V}
+#     node = MyStacks.peek(stack) # peek or pop? 
+#     isa(node, Nothing) && return nothing # if stack is empty
+
+#     if !isa(node.left, Nothing) 
+#         return (node.left, MyStacks.push!(stack, node.left))
+#     end
+
+#     while !isa(node, Nothing) 
+#         if !isa(node.right, Nothing)
+#             MyStacks.pop!(stack)
+#             return (node.right, MyStacks.push!(stack, node.right))
+#         else #LEAF!
+#             MyStacks.pop!(stack)
+#             node = MyStacks.peek(stack)
+#         end
+#     end
+#     return nothing
+# end

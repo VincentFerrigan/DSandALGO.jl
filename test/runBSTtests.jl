@@ -52,3 +52,6 @@ end
     end
     @test length(testbst) == length(testvector)
 end
+
+# TO TEST: diffrent types of iterators: DFS (preorder, inorder, postorder) and BFS
+testprint = createBST([4,3,6,1,2,5,7])
