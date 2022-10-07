@@ -73,6 +73,12 @@ function enqueue!(queue::DynamicQueue{T}, item::T) where {T}
 end
 
 function dequeue!(queue::DynamicQueue{T}) where {T}
+    if (length(queue) > 0 && 
+        length(queue) == ÷(queuecapacity(queue), 4)
+        )
+        resizequeue!(queue, ÷(queuecapacity(queue), 2))
+    end
+
     item = queue.items[queue.first] 
     queue.items[queue.first] = nothing
     if queue.first == queuecapacity(queue)

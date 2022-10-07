@@ -23,7 +23,7 @@ mutable struct DynamicQueue{T} <: MyVectorQueue{T}
     first::Int
     last::Int
     n::Int # number of slots used, not equal to last
-    function DynamicQueue{T}(queuecapacity = 12) where {T}
+    function DynamicQueue{T}(queuecapacity = 4) where {T}
         new(Array{Union{Nothing, T}}(nothing, queuecapacity), 1, 1, 0)
     end
 end
