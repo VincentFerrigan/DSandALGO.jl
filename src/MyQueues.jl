@@ -34,7 +34,8 @@ import Base: isempty, size, length # size or length or both????
 include("MyQueues_types.jl") # includes types
 include("MyQueues_utils.jl") # includes all functions 
 
-export SLQueue, dequeue!, enqueue!, isempty
+export SLQueue, DynamicQueue,
+dequeue!, enqueue!, isempty
 
 end # Module
 

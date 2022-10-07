@@ -31,6 +31,8 @@ import Base: isempty, show, iterate, size, length
 
 include("MyStacks.jl")
 using .MyStacks
+include("MyQueues.jl")
+using .MyQueues
 
 include("MyBST_types.jl")
 include("MyBST_utils.jl")

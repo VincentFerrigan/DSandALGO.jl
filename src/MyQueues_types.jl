@@ -27,3 +27,10 @@ mutable struct DynamicQueue{T} <: MyVectorQueue{T}
         new(Array{Union{Nothing, T}}(nothing, queuecapacity), 1, 1, 0)
     end
 end
+
+# # outerconstruct
+# function DynamicQueue{T}(item::T, queuecapacity = 4) where {T}
+#     items = Array{Union{Nothing, T}}(nothing, queuecapacity)
+#     items[1] = item
+#     DynamicQueue{T}(items, 1, 2, 1)
+# end

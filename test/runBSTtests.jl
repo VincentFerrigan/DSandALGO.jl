@@ -54,4 +54,32 @@ end
 end
 
 # TO TEST: diffrent types of iterators: DFS (preorder, inorder, postorder) and BFS
-testprint = createBST([4,3,6,1,2,5,7])
+tree = BTree{Int64, String}()
+add!(tree, 4, "Tree-Root ROOT")
+add!(tree, 2, "L-Subtree Root PARENT")
+add!(tree, 6, "R-Subtree Root PARENT")
+add!(tree, 1, "L-Subtree L-child LEAF")
+add!(tree, 3, "L-Subtree R-child LEAF")
+add!(tree, 5, "R-Subtree L-child LEAF")
+add!(tree, 7, "R-Subtree R-child LEAF")
+
+println("preorder")
+add!(tree, 4, "One")
+add!(tree, 2, "two")
+add!(tree, 1, "three")
+add!(tree, 3, "four")
+add!(tree, 6, "five")
+add!(tree, 5, "six")
+add!(tree, 7, "Seven")
+
+println("BredthFirst")
+add!(tree, 4, "Kanada-Guld")
+add!(tree, 2, "Kanada-Final")
+add!(tree, 6, "Sverige-Final")
+add!(tree, 1, "Kanada-Semifinal")
+add!(tree, 3, "USA-Seminfinal")
+add!(tree, 5, "Australien-Semifinal")
+add!(tree, 7, "Sverige-Semifinal")
+for node in tree
+    println(node)
+end

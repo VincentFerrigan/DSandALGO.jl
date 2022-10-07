@@ -102,33 +102,6 @@ function lookup(node::Union{BTNode{K, V}, Nothing}, key::K) where {K,V}
     end
 end
 
-function iterate(tree::BTree{K,V}) where {K,V}
-    node = tree.root
-    (node === nothing ? 
-    nothing : 
-    (node, push!(SinglyLLStack{BTNode{K, V}}(), node))
-        )
-end
-
-function iterate(_::BTree{K, V}, stack) where {K,V}
-    node = MyStacks.peek(stack)
-    isempty(node) && return nothing
-
-    if !(isempty(node.left)) # if node is not nothing i.e. node !== nothing
-        return (node.left, MyStacks.push!(stack, node.left))
-    else
-        while !(isempty(node)) # or !(isempty(node)) instead of while node !== nothing
-            if !(isempty(node.right)) # istead of if node.right !== nothing
-                MyStacks.pop!(stack)
-                return (node.right, MyStacks.push!(stack, node.right))
-            else
-                MyStacks.pop!(stack)
-                node = MyStacks.peek(stack)
-            end
-        end
-        return nothing
-    end
-end
 
 function show(io::IO, node::BTNode{K,V}) where {K,V}
     print(" key: ", node.key, " => value: ", node.value)
@@ -230,18 +203,18 @@ end
 # TESTA OM DEN FUNKAR BRA SOM ITERATE
 # Node, Left, Right
 function preorder(
+# function iterate(
     tree::BTree{K,V}, 
     node::Union{BTNode{K, V}, Nothing} = tree.root
     ) where {K, V}
-
     (node === nothing ? 
     nothing : 
     (node, push!(SinglyLLStack{BTNode{K, V}}(), node))
         )
 end
 
-# Node, Left, Right
-function preorder(_::BTree{K, V}, stack) where {K,V}
+function preorder(_::BTree{K, V}, stack) where {K,V} # Node, Left, Right
+# function iterate(_::BTree{K, V}, stack) where {K,V} # Node, Left, Right
     node = MyStacks.peek(stack) # peek or pop? 
     isa(node, Nothing) && return nothing # if stack is empty
 
@@ -261,6 +234,29 @@ function preorder(_::BTree{K, V}, stack) where {K,V}
     return nothing
 end
 
+# function bfs(
+function iterate(
+    tree::BTree{K,V}, 
+    node::Union{BTNode{K, V}, Nothing} = tree.root,
+    ) where {K, V}
+
+    queue = DynamicQueue{Union{BTNode{K, V}, Nothing}}()
+    !isa(node.left, Nothing) && enqueue!(queue, node.left)
+    !isa(node.right, Nothing) && enqueue!(queue, node.right)
+    (node === nothing ?
+    nothing :
+    node, queue 
+    )
+end
+
+# function bfs(_::BTree{K, V}, queue) where {K,V} # BFS
+function iterate(_::BTree{K, V}, queue) where {K,V} # BFS
+    node = dequeue!(queue)
+    isa(node, Nothing) && return nothing
+    !isa(node.left, Nothing) && enqueue!(queue, node.left)
+    !isa(node.right, Nothing) && enqueue!(queue, node.right)
+    return node, queue 
+end
 # INORDER KOMMER EJ ATT GÅ UTAN KÖÖÖÖÖÖÖÖÖÖÖÖÖ ENL SWEDEWIGGGGGISH
 # # Left, Node, Right
 # # NOT CHANGED YET
@@ -356,4 +352,39 @@ end
 #         end
 #     end
 #     return nothing
+# end
+# function inorder(
+#     tree::BTree{K,V}, 
+#     node::Union{BTNode{K, V}, Nothing} = tree.root
+#     ) where {K, V}
+# end
+
+
+# OLD CODE
+# function iterate(tree::BTree{K,V}) where {K,V}
+#     node = tree.root
+#     (node === nothing ? 
+#     nothing : 
+#     (node, push!(SinglyLLStack{BTNode{K, V}}(), node))
+#         )
+# end
+
+# function iterate(_::BTree{K, V}, stack) where {K,V}
+#     node = MyStacks.peek(stack)
+#     isempty(node) && return nothing
+
+#     if !(isempty(node.left)) # if node is not nothing i.e. node !== nothing
+#         return (node.left, MyStacks.push!(stack, node.left))
+#     else
+#         while !(isempty(node)) # or !(isempty(node)) instead of while node !== nothing
+#             if !(isempty(node.right)) # istead of if node.right !== nothing
+#                 MyStacks.pop!(stack)
+#                 return (node.right, MyStacks.push!(stack, node.right))
+#             else
+#                 MyStacks.pop!(stack)
+#                 node = MyStacks.peek(stack)
+#             end
+#         end
+#         return nothing
+#     end
 # end
