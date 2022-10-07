@@ -3,15 +3,9 @@ using Revise
 
 include("../src/MyLL.jl")
 include("../src/MyV.jl")
-# include("../src/LinkedListsVsArrays.jl")
-# using .LinkedListsVsArrays
+
 using .MyLL
 using .MyV
-# import .MyLL
-
-# @testset "LinkedListsVsArrays.jl" begin
-#     # Write your tests here.
-# end
 
 @testset "SinglyLinkedHamlet" begin
     hamlet = SinglyLinkedList{String}()
@@ -125,16 +119,15 @@ end
     @test length(createrandom_dllist(10)) == 10
 end
 
-k = 100 # k operations
-n = 10  # list of n elements
+# k = 100 # k operations
+# n = 10  # list of n elements
 
-sequence_vector = createrandomvector(k, n)
-singlylinked_list = createrandom_sllist(n)
-doublylinked_list = createrandom_dllist(n)
+# sequence_vector = createrandomvector(k, n)
+# singlylinked_list = createrandom_sllist(n)
+# doublylinked_list = createrandom_dllist(n)
 
-@time begin
-    for i in eachindex(sequence_vector)
-        pushfirst!(singlylinked_list, popat!(singlylinked_list, sequence_vector[i]))
-    end
-end
-
+# @time begin
+#     for i in eachindex(sequence_vector)
+#         pushfirst!(singlylinked_list, popat!(singlylinked_list, sequence_vector[i]))
+#     end
+# end

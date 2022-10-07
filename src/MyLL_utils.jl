@@ -2,7 +2,7 @@
 # Utils for MyLL module in MyLL.jl
 
 # Utils
-length(ll::MyBasicLinkedList{T}) where {T} = ll.n
+length(ll::MyAbstractLinkedList{T}) where {T} = ll.n
 
 function isempty(ll::MyAbstractLinkedList{T}) where {T} 
     ll.head === nothing ? true : false
@@ -74,7 +74,7 @@ function popfirst!(ll::MyAbstractLinkedList{T}) where T
     ll.n -= 1
     if ll.n == 0 
         ll.head = nothing
-        if isa(ill, MyImprovedLinkedList) 
+        if isa(ll, MyImprovedLinkedList) 
             ll.head = ll.tail = nothing
         end
     elseif isa(ll, DoublyLinkedList) || isa(ll, IDoublyLinkedList)
@@ -111,7 +111,10 @@ function push!(isll::ISinglyLinkedList{T}, item::T) where {T}
         isll.head = isll.tail = SingleNode{T}(item, nothing)
     else
         oldtail = isll.tail
-        oldtail.next = SingleNode{T}(item, nothing)
+        newtail = SingleNode{T}(item, nothing)
+        oldtail.next = newtail
+        isll.tail = newtail
+
     end
     isll.n += 1
     return isll

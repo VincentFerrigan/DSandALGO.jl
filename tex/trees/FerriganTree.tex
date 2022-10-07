@@ -26,7 +26,6 @@
 \usepackage{hyperref}
 \usepackage{multirow}
 % \usepackage{paralist}
-\usepackage{enumitem}
 
 %% Om jag vill referera till ett kod verb av något slag, som void null Int etc
 % \usepackage{tcolorbox}
@@ -56,19 +55,26 @@
 \begin{document}
     \maketitle
     \section*{Introduction}
-    In this paper, the performance and implementation of \emph{binary trees} 
-    was studied and analyzed. A \emph{lookup algorithm} was also compared with
-    the binary search algorithm, which was studied in a previous paper. 
-    The was done through benchmarking -- i.e. comparing the performance of
+    \label{sec:introduction}
+    In this paper, the performance and implementation of two data structures, 
+    the \emph{binary search tree} and the \emph{queue} were studied and analyzed. 
+    Several tree algorithms were also studied. 
+    A \emph{lookup algorithm} was compared with the binary search algorithm 
+    (studied in a previous paper).  % ska jag lägga till ref?
+    This was done through benchmarking -- i.e. comparing the performance of
     the two data algorithms in terms of managing data. E.g. how well do these
     algorithms' scale with the size of the input data? 
-    Does the shape of the tree matter? That is, when 
-    constructing a tree, does the order of adding nodes matter?
+    Does the shape of the tree matter during lookup? That is, when 
+    constructing a tree, does the order of adding nodes matter? 
+    Essentially affecting both the shape of the tree and its height. % mer en konklution 
 
-    The final task was to implement an iterator for traversing a binary tree 
-    based on the \emph{Depth First} approach. Which was implemented using a stack. 
-    The question is, in what order? Inorder, preorder or postorder? 
-    All these three \emph{Traversal Algorithms} where studied. 
+    The final task was to implement iterators for traversing a binary tree 
+    based on two approaches 
+    -- \emph{Depth First} and \emph{Breadth First}. 
+    Which were implemented using \emph{stacks} and \emph{queues}.
+    The question is, in what order do we apply Depth First? 
+    \emph{In-order}, \emph{pre-order} or \emph{post-order}? 
+    All four \emph{Traversal Algorithms} where studied. 
     
     The authors intent is to reach certain conclusions on the queries that were
     stated above. 
@@ -79,32 +85,41 @@
     Quick-fixes and editing was, however, done in \emph{Vim}
 
     Some scripts were executed from the \emph{REPL terminal},  while others (e.g.
-    when using data frames, performing benchmarks and producing plots) were executed from the
-    \emph{Jupyter Notebook}. 
+    when using data frames, performing benchmarks and producing plots) 
+    were executed from the \emph{Jupyter Notebook}. 
+    % Ska jag lägga till länk till min github? To follow the progress.....
+    % men då måste notebooken läggas upp.
     
     \subsection*{Tools and packages}
-    All tests were performed with the built-in package \emph{Test} and iterative development
-    was made possible through \emph{Revise.jl} -- the latter operates by continuously
-    scanning the source code for changes, even changes in function defined in
-    other modules (including in different files).
+    All tests were performed with the built-in package \emph{Test} and 
+    iterative development was made possible through 
+    \emph{Revise.jl} -- the latter operates by continuously
+    scanning the source code for changes, even changes in functions defined in
+    other modules (including modules written in different files).
     
     The benchmark data was constructed, manipulated and visualized through
-    \emph{DataFrames.jl} and \emph{Plots.jl}, while 
-    readable formatting was produced through \emph{Formatting.jl} and \emph{Unitful.jl}. 
+    \emph{DataFrames.jl} and \emph{Plots.jl}, 
+    while readable formatting was produced through 
+    \emph{Formatting.jl} and \emph{Unitful.jl}. 
 
     \subsection*{The JIT}
     Julia has a just-in-time (JIT) compilation -- which means that the code is
     dynamically compiled during program run time.     
     It takes time for the JIT compiler to 
     initially load the code and compile it. Therefore, in order not to skew the
-    results, \emph{warmup calls} were performed on certain parts of the code
+    results, \emph{warm-up calls} were performed on certain parts of the code
     before they were benchmarked. This to avoid including 
-    compilation time. The warmup calls were done with the @timed macro prior to
+    compilation time. The warm-up calls were done with the @timed macro prior to
     benchmarking.
 
     \section*{The Data Structure}
     This section briefly describes the key differences between \emph{binary trees} 
-    and other data structures -- such as \emph{linked lists} and \emph{vectors}.
+    and other data structures -- such as \emph{linked lists} and \emph{vectors}. 
+    It will also illustrate how both \emph{stacks} and \emph{queues} were used
+    when implementing \emph{traversal algorithms}. 
+    The implementation of both the lookup and traversal algorithms will also be
+    depicted by this section.
+    
     For clarity, the reader is given meaning to the terms dealing 
     with binary trees -- not only with descriptions of the
     ''tree-terms'' used in this paper, but also with a specification 
@@ -224,21 +239,25 @@ BTree{K, V}() where {K, V} = BTree{K, V}(nothing)
     its left subtree and smaller than the keys of all the nodes in its right
     subtree. The siblings are therefore ordered from left to right.
 
-    The procedure of adding a new item (consisting of a key and its associated value)
+    \clearpage
+    \subsection*{Adding and updating}
+    The procedure for adding a new item (consisting of a key and its associated value)
     to the BST requires comparing keys of
     nodes that already exist in the BST. Starting at the root and moving left
-    if the new items key is smaller than visited node or right if it is larger. 
+    if the new item's key is smaller than visited node or move right if it is larger. 
     The function written for this procedure, as shown in 
     \autoref{code:add!}, adds a new node (leaf) that maps
     given key to value. If the given key is already present, the value that is
-    mapped to it gets updated with given value. This function is recursive in nature and 
-    is therefore implemented with two methods depending on 
-    the data type it receives,  that is if the data type is a tree or a node. 
-    This feature in Julia is known as
-    \emph{multiple dispatch}, which is similar but not equal to \emph{function
-    overloading} in Java and C++. The function name ends with a bang (!) since it
-    mutates the arguments it receives. This name suffix is by convention in Julia.
-
+    mapped to it gets updated with given value. Essentially turning this function into
+    one that not only adds but also updates keys. 
+    The add-function is recursive in nature and is therefore implemented with 
+    two methods % ska jag lägga till varför det heter metoder i Julia????
+    depending on the data type it receives, 
+    that is if the data type is a tree or a node. 
+    This feature in Julia is known as \emph{multiple dispatch}, 
+    which is similar but not equal to \emph{function overloading} in Java and C++. 
+    The function name ends with a bang (!) since it mutates the arguments it receives. 
+    This name suffix is by convention in Julia. 
     \begin{figure}[H]
         \centering
     \begin{minted}[
@@ -247,11 +266,7 @@ BTree{K, V}() where {K, V} = BTree{K, V}(nothing)
         % breaklines, 
         % frame = single, 
         fontsize=\footnotesize]{julia}
-function add!(
-    tree::BTree{K, V}, 
-    key::K, value::V
-    ) where {K,V}
-    
+function add!(tree::BTree{K, V}, key::K, value::V) where {K,V}
     tree.root = add!(tree.root, key, value)
     tree
 end
@@ -261,7 +276,6 @@ function add!(
     key::K, 
     value::V
     ) where {K,V}
-
     if isa(node, Nothing)  
         node = BTNode{K, V}(key, value, nothing, nothing, 1)
         return node
@@ -279,10 +293,12 @@ function add!(
     return node
 end
     \end{minted}
-    \caption{The insert or update function 'add!' in Julia}.
+    \caption{The add or update function 'add!' in Julia.}
     \label{code:add!}
     \end{figure}
 
+    \clearpage
+    \subsection*{Accessing through lookup}
     The procedure of locating an item acts similarly to adding one to
     a BST. 
     The function, which also consist of two methods, is named 'lookup' (in
@@ -290,9 +306,9 @@ end
     \autoref{code:lookup}. The function locates and returns the value associated
     to given key. The methods return 'nothing' if the given key is not found. 
     
-    It is this function that is to benchmarked to 
+    As mentioned in the \hyperref[sec:introduction]{introduction}, 
+    it is this function that was benchmarked to 
     a binary search algorithm (see \hyperref[sec:results]{Section Results})
-
 
     \begin{figure}[H]
         \centering
@@ -319,14 +335,20 @@ end
     \caption{The locate function 'lookup' in Julia}
     \label{code:lookup}
     \end{figure}
+    In algorithm textbooks one can find other names for the functions described above 
+    e.g. the \mintinline{julia}{add!} function is called \emph{'put'} while 
+    \mintinline{julia}{lookup} is called \emph{'get'}.
+    % ska jag lägga till ref (sedgewick), och även nämna 'search' från Cormen??  
 
     \subsection*{The Traversal Algorithms}
     \label{sec:treetraversal}
     
-    A tree traversal refers to the process of visiting each node in a tree at least once. This 
-    ''visit'' can inquire some kind of action, e.g. accessing each node for printing their 
-    keys and their associated values. The question of order is of same
-    importance as visiting each node only once. Downward or sideways.
+    A tree traversal refers to the process of visiting each node in a tree at least once. 
+    This ''visit'' can inquire some kind of action, 
+    e.g. accessing each node for printing their keys and their associated values. 
+    The question of order is of same importance as visiting each node only once. 
+    
+    \subsubsection*{Downwards or sideways?}
 
     The \emph{Depth-First} approach traverses downwards through each branch of a (sub)tree
     before backtracking. It is implemented using a \emph{stack}, which will enable 
@@ -335,13 +357,68 @@ end
     level-by-level, requiring a \emph{queue} for its implementation.
     
     There are a few different orders within the Depth First approach. 
-    
-    
+    The three that were used in the study are 
+    \emph{pre-order}, \emph{in-order} and \emph{post-order}. 
+
+    The development of these traversal algorithms were done by the author
+    through iterative testing. 
+    A balanced BST was created by adding the following key-value pairs in 
+    a level-by-level and left-to-right order;
+    \begin{enumerate}[label=(\roman*), itemsep=0pt]
+        \item (key: 4 $\Rightarrow$ value: "null"), Root of BST
+        \item (key: 2 $\Rightarrow$ value: "null"), Root of left-subtree (LST)
+        \item (key: 6 $\Rightarrow$ value: "null"), Root of right-subtree (RST)
+        \item (key: 1 $\Rightarrow$ value: "null"), Leaf and left child of LST
+        \item (key: 3 $\Rightarrow$ value: "null"), Leaf and right-child of LST
+        \item (key: 5 $\Rightarrow$ value: "null"), Leaf and left-child of RST
+        \item (key: 7 $\Rightarrow$ value: "null"), Leaf and right-child of RST
+    \end{enumerate}
+
+    Depending on traversal the values were updated traversed accordingly
+
+    \begin{tabular}{|l|l|l|}
+        \hline
+        Traversal                     & Key $\Rightarrow$ Value                 & Node\\
+        \hline\hline
+        \multirow{7}{*}{Breadth-first}& 4 $\Rightarrow$ "Kanada - Guld"         & \textbf{Tree-Root} \\
+                                      & 2 $\Rightarrow$ "Kanada - Final"        & L Subtree Root\\
+                                      & 6 $\Rightarrow$ "Sverige - Final"       & R Subtree Root\\
+                                      & 1 $\Rightarrow$ "Kanada - Semifinal"    & L Subtree Left-Child\\
+                                      & 3 $\Rightarrow$ "USA - Semifinal"       & L Subtree Right-Child\\
+                                      & 5 $\Rightarrow$ "Australien - Semifinal" & R Subtree Left-Child\\
+                                      & 7 $\Rightarrow$ "Sverige - Semifinal"    & R Subtree Right-Child\\
+        \hline
+        \multirow{7}{*}{Pre-order}    & 4 $\Rightarrow$ "One"       & \textbf{Tree-Root} \\ % ska jag ändra om till prefix (polish notation)
+                                      & 2 $\Rightarrow$ "Two"       & L Subtree Root\\
+                                      & 1 $\Rightarrow$ "Three"     & L Subtree Left-Child\\
+                                      & 3 $\Rightarrow$ "Four"      & L Subtree Right-Child\\
+                                      & 6 $\Rightarrow$ "Five"      & R Subtree Root\\\
+                                      & 5 $\Rightarrow$ "Six"       & R Subtree Left-Child\\
+                                      & 7 $\Rightarrow$ "Seven"     & R Subtree Right-Child\\
+        \hline
+        \multirow{7}{*}{Post-order}   & 1 $\Rightarrow$ "1"         & L Subtree Left-Child\\
+                                      & 3 $\Rightarrow$ "2"         & L Subtree Right-Child\\
+                                      & 2 $\Rightarrow$ "+"         & L Subtree Root\\
+                                      & 5 $\Rightarrow$ "3"         & R Subtree Left-Child\\
+                                      & 7 $\Rightarrow$ "4"         & R Subtree Right-Child\\
+                                      & 6 $\Rightarrow$ "+"         & R Subtree Root/Parent\\\
+                                      & 4 $\Rightarrow$ "*"         & \textbf{Tree-Root} \\
+        \hline
+        \multirow{7}{*}{In-order}     & 1 $\Rightarrow$ "One"       & L Subtree Left-Child\\
+                                      & 2 $\Rightarrow$ "Two"       & L Subtree Root\\
+                                      & 3 $\Rightarrow$ "Three"     & L Subtree Right-Child\\
+                                      & 4 $\Rightarrow$ "Four"      & \textbf{Tree-Root} \\
+                                      & 5 $\Rightarrow$ "Five"      & R Subtree Left-Child\\
+                                      & 6 $\Rightarrow$ "Six"       & R Subtree Root\\
+                                      & 7 $\Rightarrow$ "Seven"     & R Subtree Right-Child\\
+        \hline
+    \end{tabular}
+
     % An Inorder traversal produces the infix representation of the expression.
     % A Postorder traversal produces the postfix representation of the expression. (RPN)
     % A Preorder traversal produces a representation that is the same as the way
     % that the programming language Lisp processes arithmetic expressions. (PREFIX)
-    \subsubsection*{Preorder traversal}
+    \subsubsection*{Pre-order traversal}
     % Traverses the root node first, then the left and right subtrees respectively.
     % % #### Tror det var den jag de facto byggde!!! 
     % NLR (Node Left Right)
@@ -424,7 +501,7 @@ end
     \subsection*{The Traversal Algorithms}
     \label{sec:treetraversal}
 
-    \subsubsection*{Inorder traversal}
+    \subsubsection*{In-order traversal}
     % Left Node Right
     Inorder (LDR): Visit the left subtree/nodes, then read the data of the node,
     and finally visit the right subtree/nodes.
@@ -439,7 +516,7 @@ end
     % in order to get keys in descending order.
 
 
-    \subsubsection*{Postorder traversal}
+    \subsubsection*{Post-order traversal}
     % LRN (Left, Right, Node)
     Postorder (LRD): Visit the left subtree/nodes, then visit the right
     subtree/nodes, and finally read the data of the node.
@@ -459,6 +536,8 @@ end
     % % back to the root and then to the right-most node. If it hits a node with
     % % children, it will traverse through that node’s children from left to right
     % % and then continue rightwards.
+    \subsubsection*{Breadth-first traversal}
+    
 
     \section*{Results}
     \label{sec:results}
