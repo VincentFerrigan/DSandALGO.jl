@@ -59,10 +59,10 @@ end
 ## q is full when first == last + 1 or (first == 1 and last == size)
 ## 
 function enqueue!(queue::DynamicQueue{T}, item::T) where {T}
-    # if queuesize(queue) == queueceiling(queue)
-    length(queue) == queuecapacity(queue) && println("resize please")# RESIZE
-    #     resizequeue!(queue, *(queueceiling(queue), 2))
-    # end
+    if length(queue) == queuecapacity(queue) 
+        resizequeue!(queue, *(queuecapacity(queue), 2))
+    end
+
     queue.items[queue.last] = item
     if queue.last == queuecapacity(queue)
         queue.last = 1
@@ -84,11 +84,25 @@ function dequeue!(queue::DynamicQueue{T}) where {T}
     return item
 end
 
-# function resizequeue!(dq::DynamicQueue{T}, newsize::Int) where {T}
-# 	temp = Vector{T}(undef, newsize)
-# 	for i in 1:dq.n
-# 		temp[i] = dq.items[i]
-# 	end
-# 	dq.items = temp
-# 	return
-# end
+# For vector queues
+## Initaially the first == last == 1
+## q is empty when first == last and n = 0 i.e. nbr of slots taken
+## q is full when first == last + 1 or (first == 1 and last == queuecapacity) or when n == queuecapacity
+### issue: HOW TO RESIZE? HOW TO TEST PRECONDITIONS
+## 
+function resizequeue!(queue::DynamicQueue{T}, newsize::Int) where {T}
+	temp = Array{Union{Nothing, T}}(nothing, newsize)
+
+    for i = 1:length(queue)
+        pos = %((queue.first + i - 1), queuecapacity(queue))
+        if pos == 0 
+            pos = queuecapacity(queue)
+        end
+        temp[i] = queue.items[pos]
+    end
+
+	queue.items = temp
+    queue.first = 1
+    queue.last = queue.first + queue.n
+	return
+end
