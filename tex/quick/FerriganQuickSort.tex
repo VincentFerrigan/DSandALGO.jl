@@ -1,0 +1,424 @@
+
+%! FerriganQuickSort.tex
+%! Author = Vincent Ferrigan <ferrigan@kth.se>
+%! Date = 2022-10-07
+% Todo:
+% * add references. Which one?
+
+% Preamble
+\documentclass[a4paper, 11pt]{article}
+% \usepackage{geometry}
+%  \geometry{
+%  a4paper,
+%  total={170mm,257mm},
+%  left=20mm,
+%  top=20mm,
+%  }
+% \usepackage[a4paper, total={6in, 6in}]{geometry}
+% Packages
+\usepackage[T1]{fontenc}
+% \usepackage[utf8]{inputenc} % ska den tas bort iom lua?
+% \usepackage[utf8]{luainputenc}
+\usepackage[english]{babel}
+\usepackage{fontspec}
+\usepackage{microtype}
+\setmonofont{DejaVu Sans Mono}[Scale=MatchLowercase]
+\usepackage{listings}
+\usepackage{minted}
+\usepackage{latexsym,exscale,stmaryrd,amsmath,amssymb}
+\newtheorem{definition}{Definition}
+\usepackage{unicode-math}
+\usepackage{lmodern}
+\usepackage{enumitem}
+\usepackage{subcaption}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{multirow}
+% \usepackage{paralist}
+
+%% Om jag vill referera till ett kod verb av något slag, som void null Int etc
+% \usepackage{tcolorbox}
+% \newtcbox{\somestuffstyle}{on line,boxrule=0pt,boxsep=0pt,colback=lightgray,top=1pt,bottom=1pt,left=1pt,right=1pt,arc=0pt,fontupper=\ttfamily}
+
+\usepackage[
+    backend=biber,
+    % hyperref=true,
+    maxnames=3, 
+    minnames=1, 
+    nohashothers=false
+    bibencoding=utf8, % eventuellt
+    style=apa,
+    % citestyle=apa,
+    pluralothers=true,
+    natbib=true
+    % sorting=nyt
+    % autocite=inline
+    ]{biblatex}
+\DefineBibliographyStrings{english}{andothers={et. al}, and={&}}
+\DeclareLanguageMapping{english}{english-apa}
+\addbibresource{references.bib} % hör till referenser
+% \addbibresource{../references.bib} % hör till referenser
+% \usepackage[backend=biber,style=apa,natbib=true,sorting=nyt]{biblatex}
+% \usepackage{natbib}
+\usepackage{csquotes}
+\usepackage[nottoc]{tocbibind}
+\usepackage{xcolor}
+\usepackage{siunitx}
+\usepackage{tikz}
+\usepackage[font=small,labelfont=bf]{caption}
+% Addiding JuliaMono
+\newfontfamily \JuliaMono {JuliaMono-Regular.ttf}[
+    Path      = ./,
+    Extension = .ttf
+    ]
+\newfontface \JuliaMonoMedium{JuliaMono-Regular}
+\setmonofont{JuliaMonoMedium}[
+    Contextuals=Alternate
+]
+
+\title{Quick sort an array and a linked list\\ \small{ID1021 Algorithms and Data structures}} %%TODO VILKEN RUBRICERING
+\author{Vincent Ferrigan}
+
+\date{\today}
+
+\begin{document}
+    \maketitle
+    \section*{Introduction}
+    \label{sec:introduction}
+    In this paper, the performance and implementation of 
+    the \emph{quick sort algorithm} were studied and analyzed. 
+
+    The algorithm's performance was analyzed through benchmarking 
+    -- i.e. comparing the performance of the algorithm 
+    on different data structures and different sets of data. 
+    The benchmark will be done on the two data structures  
+    \emph{Singly Linked Lists} and \emph{Arrays}.
+    \begin{itemize}
+        \item How well does the algorithm scale?
+        \item Does the quality of data affect the performance?
+        E.g. what if the elements in a list are already in order? 
+        What if they are partially in order?
+    \end{itemize}
+
+    \section*{Methods}
+    \label{sec:methods}
+    All the Data Structures and Algorithms were implemented in \emph{Julia}.
+    The Code was mostly written in \emph{VSCode} and run on \emph{Julia 1.8.0}.
+    Quick-fixes and editing was, however, done in \emph{Vim}
+
+    Some scripts were executed from the \emph{REPL terminal},  while others (e.g.
+    when using data frames, performing benchmarks and producing plots) 
+    were executed from the \emph{Jupyter Notebook}. 
+    % Ska jag lägga till länk till min github? To follow the progress.....
+    % men då måste notebooken läggas upp.
+    
+    \subsection*{Tools and packages}
+    All tests were performed with the built-in package \emph{Test} and 
+    iterative development was made possible through 
+    \emph{Revise.jl} -- the latter operates by continuously
+    scanning the source code for changes, even changes in functions defined in
+    other modules (including modules written in different files).
+    
+    The benchmark data was constructed, manipulated and visualized through
+    \emph{DataFrames.jl} and \emph{Plots.jl}, 
+    while readable formatting was produced through 
+    \emph{Formatting.jl} and \emph{Unitful.jl}. 
+
+    \subsection*{The JIT}
+    Julia has a just-in-time (JIT) compilation -- which means that the code is
+    dynamically compiled during program run time.     
+    It takes time for the JIT compiler to 
+    initially load the code and compile it. Therefore, in order not to skew the
+    results, \emph{warm-up calls} were performed on certain parts of the code
+    before they were benchmarked. This to avoid including 
+    compilation time. The warm-up calls were done with the @timed macro prior to
+    benchmarking.
+
+    \section*{The Data Structure/Algorithms} %% TODO CHANGE DEPENDING ON ASSIGNMENT
+    This section briefly describes the algorithm 
+    and the key differences between its implementation for sorting arrays 
+    and linked lists. The reader will also be provided with 
+    code examples when necessary.
+
+    \subsection*{Conventions}
+    It is important for the reader to note that Julia uses a one-based-numbering
+    convention, (i.e. array indices start from 1 to N) and that one dimensional
+    arrays are called vectors. 
+    For consistency, the author has chosen to refer to one dimensional
+    arrays as vectors and apply the 1-based convention when numbering
+    sequences of elements more broadly. 
+
+    Function names that ends with a bang (!) mutates the arguments it receives. 
+    This name suffix is by convention in Julia. 
+    
+    Unlike other languages, Julia objects cannot be ''null'' by default. The
+    equivalent of \lstinline[language=Python]{None} in Python or
+    \lstinline[language=C]{NULL} and \lstinline[language=C]{void} in C is
+    \mintinline{julia}{Nothing}. The Julia convention is to return the value
+    \mintinline{julia}{nothing}, which is a singleton instance of type
+    \mintinline{julia}{Nothing}, when such a side effect is
+    desired. 
+    \subsubsection*{Quick Sort}
+    The main idea behind \emph{Quick Sort} is based on the 
+    \emph{divide-and-conquer method}. 
+    That is \emph{dividing} the (sorting) problem into independent subproblems. 
+    \emph{Conquer} the subproblems by solving them recursively and later \emph{combine} the 
+    subsolutions to solve the overall problem. A method that is also used by
+    \emph{merge sort}. However, unlike merge sort, the algorithm sorts in place. 
+    By \emph{sorting in place} means that at most only 
+    a constant number of elements of the
+    input vector (or list) is ever sorted outside.
+    Which is advantageous for space efficiency \parencite{CormenThomasH2022ItA}.
+    \textcite{CormenThomasH2022ItA} writes that the algorithm is therefore 
+    popular for sorting large arrays. That being the case, the paper will 
+    start by describing the quick sort implementation for vectors.
+
+    The algorithm has therefore two parts:
+    \begin{enumerate}
+        \item \emph{Divide} by partitioning the vector $[p, r]$ into 
+        two subvectors that are to be sorted independently. 
+        One low side $[p,q)$ and one high side $(q,]$. 
+        Each element in the low side of the partition is 
+        less than or equal to the pivot $q$. Each element in
+        the high side is in turn greater or equal to the pivot.
+        \item \emph{Conquer} by recursively calling quick sort to rearrange 
+        each of the subvectors.
+    \end{enumerate}
+    
+    When the subvectors are sorted 
+    the whole vector is in order. The \emph{combine} part is
+    therefore unnecessary.
+
+    As mentioned above, the algorithm is implemented as a recursive function. 
+    Every recursive function starts with a \emph{''do-again-test''},
+    which in the implementation examples, 
+    is either written as a \emph{comparative condition}
+    (see row 2 in the \mintinline{julia}{quicksort!} method in figure
+    \autoref{code:qsvector}) or as a 
+    \emph{short-circuit return condition} 
+    (see row 2 in the \mintinline{julia}{quicksort!} inner method in figure
+    \autoref{code:qsvector}).
+
+    The pivot $q$ is chosen by 
+    the partition method for vectors. This method also rearranges the 
+    subvectors.
+
+    \begin{figure}[h]
+        \centering
+        %% you can have several subfigures or minteds
+        %% TODO: add label/caption on minted, e.g. Outer Method
+    \begin{minted}[
+        label= Quick sort for vectors, 
+        linenos, 
+        % breaklines, 
+        frame = single, 
+        fontsize=\footnotesize]{julia}
+function quicksort!(v::Vector, p=1, r=length(v))
+    if p < r 
+        q = partition!(v, p, r)    
+        quicksort!(v, p, (q - 1))
+        quicksort!(v, (q + 1), r)
+    end
+end
+    \end{minted}
+    \begin{minted}[
+        label=The helpfunction, 
+        linenos, 
+        % breaklines, 
+        frame = single, 
+        fontsize=\footnotesize]{julia}
+function partition!(v::Vector, p, r)
+    pivot = v[r]
+    i = p - 1
+    for j = p:r-1
+        if v[j] <= pivot
+            i += 1
+            v[i], v[j] = v[j], v[i]
+        end
+    end
+    v[i + 1], v[r] = v[r], v[i + 1]
+    return i + 1 # next pivot
+end
+    \end{minted}
+    \caption{Quick sort implementation for vectors. 
+    Without preserving randomness} %% TODO ADD CAPTION
+    \label{code:qsvector} %% TODO ADD LABEL
+    \end{figure}
+
+    \subsubsection*{The problem of orderliness -- how to preserve randomness}
+    On average, to sort a vector of length $n$ requires time 
+    proportional to $n\log n$ \parencite{Segeqick2011Alg4th}. 
+    However, 
+    its worst-case has a quadratic runtime. If the vector is 
+    already sorted, both in ascending or descending order, 
+    will partition with n-1 elements on one side and zero 
+    elements on the other. 
+
+    If this unbalanced partition occurs in each recursive call, 
+    The side with zero elements will have a constant time of 1 and
+    the one with n-1 elements will run in linear time.
+    Adding this all together:
+    \[ (n + (n-1) + (n-2)+ ... + 2 + 1 = \frac{n(n+1)}{2} = O(n\log n) \]
+
+    \textcite{Segeqick2011Alg4th} solution is to randomly shuffle 
+    the vector to protect against the worst case. They mention 
+    that the inventor of this algorithm, \emph{C. A. R. Hoarce},
+    proposed this approach when he presented it in 1960.
+    An alternative way is to choose a random item for 
+    partitioning. Which this paper has chosen to implement, based 
+    of the pseudo-code presented by \textcite{CormenThomasH2022ItA}.
+
+    \begin{figure}[h]
+        \centering
+        %% you can have several subfigures or minteds
+        %% TODO: add label/caption on minted, e.g. Outer Method
+    \begin{minted}[
+        label= Randomized Quick Sort,
+        linenos, 
+        % breaklines, 
+        frame = single, 
+        fontsize=\footnotesize]{julia}
+function randomized_quicksort!(v::Vector, p=1, r=length(v))
+    if p < r
+        q = randomized_partition!(v, p, r)    
+        randomized_quicksort!(v, p, (q-1))
+        randomized_quicksort!(v, (q + 1), r)
+    end
+end
+    \end{minted}
+    \begin{minted}[
+        label= Randomized Partition,
+        linenos, 
+        % breaklines, 
+        frame = single, 
+        fontsize=\footnotesize]{julia}
+function randomized_partition!(v::Vector, p, r)
+    i = rand(p:r)
+    v[r], v[i] = v[i], v[r]
+    return partition!(v, p, r)
+end
+    \end{minted}
+    \caption{Preserving randomness of the quick sort implementation for vectors}
+    \label{code:qsrand} %% TODO ADD LABEL
+    \end{figure}
+
+    Instead of always using the "last" element as pivot $v[r]$, 
+    a randomized version randomly chooses the pivot from the 
+    subvetor $v[p:r]$, where each element has an equal probability of being
+    chosen. Before partitioning, the value in the randomly picked index
+    is swaped with $v[r]$. By doing so 
+    the wrapper function \mintinline{julia}{randomized-partition!} 
+    (see \autoref{code:qsrand}) can reuse the partition procedure by calling
+    \mintinline{julia}{partition!}.
+    The study could however not find a solution for solving this problem
+    when quick sorting linked lists.
+
+    \clearpage
+    \subsubsection*{Quick Sort for Linked Lists}
+    The \mintinline{julia}{quicksort!} function is recursive in nature and is therefore implemented with 
+    several methods, one inner (wrapper) and one outer (as seen in \autoref{code:qslist}), 
+    but also depending on the data type it receives, 
+    that is if the data type is a vector or a linked list 
+    (compare \mintinline{julia}{quicksort!} in 
+    \autoref{code:qsvector} with \autoref{code:qslist}). 
+    The same applies for the partition function \mintinline{julia}{partition!}.
+    This feature in Julia is known as \emph{multiple dispatch}, 
+    which is similar but not equal to \emph{function overloading} in Java and C++. 
+
+    \begin{figure}[h]
+        \centering
+        %% you can have several subfigures or minteds
+        %% TODO: add label/caption on minted, e.g. Outer Method
+    \begin{minted}[
+        label= Outer method - q.s. for linked lists,
+        linenos, 
+        % breaklines, 
+        frame = single, 
+        fontsize=\footnotesize]{julia}
+function quicksort!(list::ISinglyLinkedList) 
+    quicksort!(list.head, list.tail)
+end
+    \end{minted}
+    \begin{minted}[
+        label= Inner method,
+        linenos, 
+        % breaklines, 
+        frame = single, 
+        fontsize=\footnotesize]{julia}
+function quicksort!(p::SingleNode, r::SingleNode)
+    p == r && return 
+    q = partition!(p, r)
+    (!isa(q, Nothing) && !isa(q.next, Nothing) 
+    && quicksort!(q.next, r)
+    )
+    !isa(q, Nothing) && p != q && quicksort!(p, q)
+    \end{minted}
+    \begin{minted}[
+        label= Partition for linked lists,
+        linenos, 
+        % breaklines, 
+        frame = single, 
+        fontsize=\footnotesize]{julia}
+function partition!(p::SingleNode, r::SingleNode)
+    pivot = p
+    front = p
+    while !isa(front, Nothing) && front != r
+        if front.data < r.data
+            pivot = p
+            p.data, front.data = front.data, p.data
+            p = p.next
+        end
+        front = front.next
+    end
+    p.data, r.data = r.data, p.data
+    return pivot
+end
+    \end{minted}
+    \caption{The quick sort implementation for linked lists}
+    \label{code:qslist} %% TODO ADD LABEL
+    \end{figure}
+
+\clearpage
+    \section*{Results}
+    \label{sec:results}
+    The result of the benchmark is illustrated in the figures and table below.
+    The figure \ref{fig:fig1} diagrammatically visualize the operations while the
+    data is described in table \ref{tab:growth}.
+
+    \begin{figure}[h] % You can have subfigures !! If necessary 
+        \centering
+        \includegraphics[width=0.8\textwidth]{./input/ws_fig1.pdf} %% TODO: add pdf
+        \caption{How the quick sort algorithm scales with growth of input data.}%% TODO: add caption
+        \label{fig:fig1} %% TODO: add correct fignbr /label
+    \end{figure}
+
+%     \begin{table}[ht]
+%         \centering
+%         \small
+% \begin{tabular}{|c|c|c|c|c|c|}
+% \hline
+% \multirow{2}{*}{n} & \multicolumn{3}{c|}{Time}          & \multirow{2}{*}{Ratio}& \multicolumn{3}{c|}{Growth Ratio}\\\cline{2-4}\cline{6-8}
+%                                         % && SSL & DLL & & SLL & DLL \\
+%                    & Vector & Randomized & List         &                       & Vector  & Randomized & List\\
+% \hline
+% \SI{10}{m} & \SI{0.78}{\nano\second}  & \SI{0.34}{\nano\second}  & \SI{1.23}{\nano\second} & \num{0.63} & \num{1.23} & \num{1.0} & \num{1.0}\\
+% \SI{20}{m} & \SI{1.55}{\nano\second}  & \SI{0.68}{\nano\second}  & \SI{2.46}{\nano\second} & \num{0.63} & \num{2.46} & \num{2.0} & \num{2.0}\\
+% \SI{30}{m} & \SI{2.47}{\nano\second}  & \SI{1.11}{\nano\second}  & \SI{3.99}{\nano\second} & \num{0.62} & \num{3.99} & \num{3.2} & \num{3.3}\\
+% \SI{40}{m} & \SI{3.37}{\nano\second}  & \SI{1.43}{\nano\second}  & \SI{5.26}{\nano\second} & \num{0.64} & \num{5.26} & \num{4.3} & \num{4.2}\\
+% \SI{50}{m} & \SI{4.45}{\nano\second}  & \SI{1.92}{\nano\second}  & \SI{6.97}{\nano\second} & \num{0.64} & \num{6.67} & \num{5.7} & \num{5.7}\\
+% \SI{60}{m} & \SI{5.35}{\nano\second}  & \SI{2.41}{\nano\second}  & \SI{8.63}{\nano\second} & \num{0.61} & \num{8.63} & \num{6.8} & \num{7.1}\\
+% \SI{70}{m} & \SI{6.40}{\nano\second}  & \SI{2.74}{\nano\second}  & \SI{10.88}{\nano\second} & \num{0.59} & \num{10.88}& \num{8.2} & \num{8.0}\\
+% \SI{80}{m} & \SI{7.80}{\nano\second}  & \SI{3.26}{\nano\second}  & \SI{12.54}{\nano\second} & \num{0.62} & \num{12.54}& \num{10.0} & \num{9.6}\\
+% \SI{90}{m} & \SI{9.59}{\nano\second}  & \SI{3.94}{\nano\second}  & \SI{14.49}{\nano\second} & \num{0.66} & \num{14.49}& \num{12.3} & \num{11.6}\\
+% \SI{100}{m}& \SI{10.18}{\nano\second} & \SI{4.20}{\nano\second}  & \SI{16.33}{\nano\second} & \num{0.62} & \num{16.33}& \num{13.1} & \num{12.4}\\
+% \hline
+% \end{tabular}
+%     \caption{}
+%     \label{tab:growth}
+%     \end{table}
+
+    \section*{Discussion}
+    \label{sec:discussion}
+    xxxxxx
+\printbibliography
+\end{document}

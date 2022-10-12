@@ -119,6 +119,9 @@ end
     @test length(createrandom_dllist(10)) == 10
 end
 
+list = isllistfromvector([5,2,4,5,1])
+println(list.tail)
+
 # k = 100 # k operations
 # n = 10  # list of n elements
 
