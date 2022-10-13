@@ -202,6 +202,51 @@ end
 
 # TESTA OM DEN FUNKAR BRA SOM ITERATE
 # Node, Left, Right
+# function preorder3(
+function iterate(tree::BTree{K,V}) where {K, V}
+    isempty(tree) && return nothing
+    node = tree.root
+    stack = SinglyLLStack{Union{BTNode{K, V}, Nothing}}()
+    !isa(node.right, Nothing) && push!(stack, node.right)
+    !isa(node.left, Nothing) && push!(stack, node.left)
+    return node, stack
+end
+
+# function preorder3(_::BTree{K, V}, stack) where {K,V} # Node, Left, Right
+function iterate(_::BTree{K, V}, stack) where {K,V} # Node, Left, Right
+    node = pop!(stack)
+    isa(node, Nothing) && return nothing
+    !isa(node.right, Nothing) && push!(stack, node.right)
+    !isa(node.left, Nothing) && push!(stack, node.left)
+    return node, stack
+end
+
+function preorder2(
+# function iterate( # preorder
+    tree::BTree{K,V}, 
+    node::Union{BTNode{K, V}, Nothing} = tree.root
+    ) where {K, V}
+
+    stack = SinglyLLStack{Union{BTNode{K, V}, Nothing}}()
+    node === nothing ? nothing : node, push!(stack, node)
+end
+function preorder2(_::BTree{K, V}, stack) where {K,V} # Node, Left, Right
+# function iterate(_::BTree{K, V}, stack) where {K,V} # Node, Left, Right
+    node = peek(stack)
+    isa(node, Nothing) && return nothing # if stack is empty
+
+    !isa(node.left, Nothing) && return (node.left, push!(stack, node.left))
+    while !isa(node, Nothing) 
+        if !isa(node.right, Nothing)
+            pop!(stack)
+            return (node.right, push!(stack, node.right))
+        else #LEAF!
+            pop!(stack)
+            node = peek(stack)
+        end
+    end
+end
+
 function preorder(
 # function iterate(
     tree::BTree{K,V}, 
@@ -234,23 +279,18 @@ function preorder(_::BTree{K, V}, stack) where {K,V} # Node, Left, Right
     return nothing
 end
 
-# function bfs(
-function iterate(
-    tree::BTree{K,V}, 
-    node::Union{BTNode{K, V}, Nothing} = tree.root,
-    ) where {K, V}
-
+# function iterate(tree::BTree{K,V}) where {K, V}
+function bfs(tree::BTree{K,V}) where {K, V}
+    node = tree.root
+    isa!(node, Nothing) && return nothing
     queue = DynamicQueue{Union{BTNode{K, V}, Nothing}}()
     !isa(node.left, Nothing) && enqueue!(queue, node.left)
     !isa(node.right, Nothing) && enqueue!(queue, node.right)
-    (node === nothing ?
-    nothing :
-    node, queue 
-    )
+    return node, queue
 end
 
-# function bfs(_::BTree{K, V}, queue) where {K,V} # BFS
-function iterate(_::BTree{K, V}, queue) where {K,V} # BFS
+function bfs(_::BTree{K, V}, queue) where {K,V} # BFS
+# function iterate(_::BTree{K, V}, queue) where {K,V} # BFS
     node = dequeue!(queue)
     isa(node, Nothing) && return nothing
     !isa(node.left, Nothing) && enqueue!(queue, node.left)
@@ -273,49 +313,6 @@ end
 #         node = node.left 
 #     end
 #     return node, push!(stack, node)
-# end
-
-# # INORDER KOMMER EJ ATT GÅ UTAN KÖÖÖÖÖÖÖÖÖÖÖÖÖ ENL SWEDEWIGGGGGISH
-# # Left, Node, Right
-# # NOT CHANGED YET
-# function inorder(
-#     tree::BTree{K, V}, 
-#     stack = MyStacks.SinglyLinkedList{BTNode{K, V}}(tree.root, 1)
-#     ) where {K,V}
-
-#     MyStacks.isempty(stack) && return nothing
-#     node = MyStacks.peek(stack)
-
-#     while !isa(node, Nothing)
-#         MyStacks.push!(stack, node)
-#         node = node.left 
-#     end
-
-#     node = MyStacks.pop!(stack)
-
-#     if isa(node.right, Nothing) && !isa(MyStacks.peek(stack).right, nothing)
-#         return node, MyStacks.push!(stack, node.right)
-#     else
-
-
-#     if !isa(node.left, Nothing)
-#         while !isa(node.left, Nothing) 
-#             MyStacks.push!(stack, node)
-#             node = node.left 
-#         end
-#         return node, stack
-#     elseif !isa(node.right, Nothing) 
-#         MyStacks.push!(stack, node.right)
-#         while !isa(node.left, Nothing) 
-#             MyStacks.push!(stack, node)
-#             node = node.left 
-#         end
-#         return (node, MyStacks.push!(stack, node))
-#     else #LEAF!
-#        MyStacks.pop!(stack)
-#        return (node, stack)
-#     end
-#     return nothing
 # end
 
 # # KOMMER POSTORDER FUNKA MED STACK, ELLER ÄR DET KÖ SOM GÄLLER HÄRMED?
@@ -359,32 +356,3 @@ end
 #     ) where {K, V}
 # end
 
-
-# OLD CODE
-# function iterate(tree::BTree{K,V}) where {K,V}
-#     node = tree.root
-#     (node === nothing ? 
-#     nothing : 
-#     (node, push!(SinglyLLStack{BTNode{K, V}}(), node))
-#         )
-# end
-
-# function iterate(_::BTree{K, V}, stack) where {K,V}
-#     node = MyStacks.peek(stack)
-#     isempty(node) && return nothing
-
-#     if !(isempty(node.left)) # if node is not nothing i.e. node !== nothing
-#         return (node.left, MyStacks.push!(stack, node.left))
-#     else
-#         while !(isempty(node)) # or !(isempty(node)) instead of while node !== nothing
-#             if !(isempty(node.right)) # istead of if node.right !== nothing
-#                 MyStacks.pop!(stack)
-#                 return (node.right, MyStacks.push!(stack, node.right))
-#             else
-#                 MyStacks.pop!(stack)
-#                 node = MyStacks.peek(stack)
-#             end
-#         end
-#         return nothing
-#     end
-# end

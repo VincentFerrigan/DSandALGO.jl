@@ -28,7 +28,7 @@ include("./MyStacks.jl")
 include("./RPNTypes.jl")
 include("./RPNUtils.jl")
 
-export HP35, SET_OF_STATIC_TYPES, run, peek, stacksize, 
-readexpressions_linebyline, personalnumbers_lastdigit, check_personalnumber
+export HP35, SET_OF_STATIC_TYPES, run, peek, stacksize
+export readexpressions_linebyline, personalnumbers_lastdigit, check_personalnumber
 
 end # module

@@ -31,7 +31,7 @@ import Base: pop!, push!, peek, isempty
 include("MyStacks_types.jl") # includes types
 include("MyStacks_utils.jl") # includes all functions 
 
-export SinglyLLStack, StaticStack, DynamicStack, pop!, push!, peek, stacksize,
-stackceiling, resizestack!, isempty
+export SinglyLLStack, StaticStack, DynamicStack, pop!, push!, peek, stacksize
+export stackceiling, resizestack!, isempty
 
 end # module

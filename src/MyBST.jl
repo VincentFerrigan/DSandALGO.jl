@@ -39,7 +39,7 @@ include("MyBST_utils.jl")
 
 # include("SortingAlgo.jl")
 # import .SortingAlgo # or using insertionsort?
-export BTree, BTNode, isempty, show, iterate, size, length,
-add!, lookup, createBST, print_tree, binary_search
+export BTree, BTNode, isempty, show, iterate, size, length
+export add!, lookup, createBST, print_tree, binary_search
 
 end # end module
