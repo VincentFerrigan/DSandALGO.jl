@@ -25,8 +25,9 @@ Contains:
 - show #TODO
 - iterate
 - pushfirst!
-- popfirst!
 - push!
+- remove!
+- popfirst!
 - pop! #TODO : tests
 - popitem! # TODO
 - removeitem!
@@ -35,8 +36,9 @@ Contains:
 - findtail
 - findnode_withnext: tests
 - findfirst: tests
-- sllistfromvector
+- sllistfromvector # kan göras som en function med flera metoder, då man kan skicka in en lista oavsett typ
 - dllistfromvector
+- isllistfromvector
 - createrandom_sllist # Utils for benchmarking
 - createrandom_sllist # Utils for benchmarking
 
@@ -51,10 +53,12 @@ import Base: append!, push!, pop!, popat!, show, findfirst, iterate
 include("MyLL_types.jl") # includes types and outer constructs
 include("MyLL_utils.jl") # includes all functions for linkedlists
 
-export SinglyLinkedList, DoublyLinkedList,
-append!, pushfirst!, popfirst!, pop!, push!, popat!, peekfirst, 
-isempty, length, show, findtail, removeitem!,
-sllistfromvector, dllistfromvector, 
-createrandom_sllist, createrandom_dllist
+export SinglyLinkedList, DoublyLinkedList
+export ISinglyLinkedList, IDoublyLinkedList
+export SingleNode, DoubleNode
+export append!, pushfirst!, popfirst!, pop!, push!, popat!, remove!, peekfirst
+export isempty, length, show, findtail, removeitem!, iterate
+export sllistfromvector, dllistfromvector, isllistfromvector, idllistfromvector 
+export createrandom_sllist, createrandom_dllist
 
 end # module

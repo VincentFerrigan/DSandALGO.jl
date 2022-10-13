@@ -119,18 +119,21 @@ end
     @test length(createrandom_dllist(10)) == 10
 end
 
-list = isllistfromvector([5,2,4,5,1])
-println(list.tail)
+# list = isllistfromvector([5,2,4,5,1])
+# println(list.tail)
 
-# k = 100 # k operations
-# n = 10  # list of n elements
+# # k = 100 # k operations
+# # n = 10  # list of n elements
 
-# sequence_vector = createrandomvector(k, n)
-# singlylinked_list = createrandom_sllist(n)
-# doublylinked_list = createrandom_dllist(n)
-
-# @time begin
-#     for i in eachindex(sequence_vector)
-#         pushfirst!(singlylinked_list, popat!(singlylinked_list, sequence_vector[i]))
-#     end
+# # sequence_vector = createrandomvector(k, n)
+# singlylinked_list = createrandom_sllist(3)
+# # doublylinked_list = createrandom_dllist(n)
+# for node in singlylinked_list
+#     println(typeof(node))
 # end
+
+# # @time begin
+# #     for i in eachindex(sequence_vector)
+# #         pushfirst!(singlylinked_list, popat!(singlylinked_list, sequence_vector[i]))
+# #     end
+# # end

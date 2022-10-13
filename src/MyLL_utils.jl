@@ -11,18 +11,60 @@ end
 # # TODO
 # # Krockade en del. Vet inte riktigt varför
 function show(io::IO, ll::MyAbstractLinkedList)
-    for data in ll
-        print(data, " ")
+    print("(")
+    for node in ll
+        print(node.data, " ")
     end
+    print(")")
+end
+
+function show(io::IO, node::MyAbstractNode{T}) where {T}
+    print(" Type: ", typeof(node), " Data: ", node.data)
 end
 
 # Hur använda på bästa sätt? Går det att använda för findtail?
 function iterate(
-    ll::MyBasicLinkedList{T}, 
+    ll::MyAbstractLinkedList{T}, 
     node::Union{MyLinkedListNode{T}, Nothing} = ll.head
     ) where {T}
 
-    node === nothing ? nothing : (node.data, node.next)
+    node === nothing ? nothing : (node, node.next)
+end
+
+function pushfirst!(
+    sll::Union{SinglyLinkedList{T}, ISinglyLinkedList{T}}, 
+    node::SingleNode{T}
+    ) where {T} 
+
+    if isempty(sll)
+        sll.head = node
+        sll isa ISinglyLinkedList && (sll.tail = node)
+    else
+        oldhead = sll.head
+        node.next = oldhead
+        sll.head = node
+    end
+    sll.n += 1
+    return sll
+end
+
+function pushfirst!(
+    dll::Union{DoublyLinkedList{T}, IDoublyLinkedList{T}}, 
+    node::DoubleNode{T}
+    ) where {T}
+
+    node.previous = nothing # just in case
+    if isempty(dll)
+        dll.head = node
+        dll isa IDoublyLinkedList && (dll.tail = node)
+    else
+        oldhead = dll.head
+        node.next = oldhead
+        oldhead.previous = node
+        dll.head = node
+    end
+    dll.n += 1
+    return dll
 end
 
 function pushfirst!(
@@ -56,31 +98,6 @@ function pushfirst!(
     end
     dll.n += 1
     return dll
-end
-
-"""
-    popfirst!(ll:MyAbstractLinkedList)
-
-Removes the item from the beginning of the list
-# Arguments
-- `ll::MyAbstractLinkedList` : List of type SinglyLinkedList and DoublyLinkedList
-"""
-function popfirst!(ll::MyAbstractLinkedList{T}) where T
-    ll.n == 0  &&  throw(ArgumentError("List is empty"))
-
-    item = ll.head.data
-    oldhead = ll.head
-    ll.head = oldhead.next
-    ll.n -= 1
-    if ll.n == 0 
-        ll.head = nothing
-        if isa(ll, MyImprovedLinkedList) 
-            ll.head = ll.tail = nothing
-        end
-    elseif isa(ll, DoublyLinkedList) || isa(ll, IDoublyLinkedList)
-        ll.head.previous = nothing
-    end
-    return item
 end
 
 function push!(sll::SinglyLinkedList{T}, item::T) where {T}
@@ -132,123 +149,124 @@ function push!(idll::IDoublyLinkedList{T}, item::T) where {T}
     return idll
 end
 
-# # TODO: tests
-function pop!(ll::MyBasicLinkedList{T}) where {T}
+"""
+    remove!(
+        sll::Union{SinglyLinkedList{T}, ISinglyLinkedList{T}}, 
+        node::SingleNode{T}
+        ) where {T}
+
+Removes links, i.e. references, to the given node from previous node
+and to next node from given node. 
+Linkes previous node to the next.
+Returns xxxxxx or throws an error if xxxx. 
+"""
+function remove!(
+    sll::Union{SinglyLinkedList{T}, ISinglyLinkedList{T}}, 
+    node::SingleNode{T}
+    ) where {T}
+
+    previousnode = findnode_withnext(sll, node)
+    nextnode = node.next
+    (previousnode isa Nothing  # link prev with next
+    || (previousnode.next = nextnode))
+    (sll.head == node          # update head if nec
+      && (sll.head = nextnode))
+    (sll isa ISinglyLinkedList # update tail link if nec
+      && sll.tail == node
+      && (sll.tail = previousnode))
+    node.next = nothing        # nullify removed node
+    sll.n -=1                  # update list count
+end
+
+"""
+    remove!(
+        dll::Union{DoublyLinkedList{T}, IDoublyLinkedList{T}}, 
+        node::SingleNode{T}
+        ) where {T}
+
+Removes links, i.e. references, to the given node from previous node
+and to next node from given node. 
+Linkes previous node to the next.
+Returns xxxxxx or throws an error if xxxx. 
+"""
+function remove!(
+    dll::Union{DoublyLinkedList{T}, IDoublyLinkedList{T}}, 
+    node::DoubleNode{T}
+    ) where {T}
+
+    previousnode = node.previous # could be nothing
+    nextnode = node.next         # could be nothing
+    (nextnode isa Nothing        # link next with prev
+      || (nextnode.previous = previousnode))
+    (previousnode isa Nothing    # link prev with next
+      || (previousnode.next = nextnode))
+    (dll.head == node            # update head if nec
+      && (dll.head = nextnode))
+    (dll isa IDoublyLinkedList   # update tail link if nec
+      && dll.node == node
+      && (dll.tail = previousnode))
+    node.next = nothing          # nullify removed node
+    node.previous = nothing
+    dll.n -=1                    # update list count
+end
+
+"""
+    popfirst!(ll:MyAbstractLinkedList)
+
+Removes the item from the beginning of the list
+# Arguments
+- `ll::MyAbstractLinkedList` : List of type SinglyLinkedList and DoublyLinkedList
+"""
+function popfirst!(ll::MyAbstractLinkedList{T}) where T
+    ll.n == 0  &&  throw(ArgumentError("List is empty"))
+
+    data = ll.head.data
+    node = ll.head
+    remove!(ll, node)
+    return data
+end
+
+function pop!(ll::MyAbstractLinkedList{T}) where {T}
     ll.n == 0  &&  throw(ArgumentError("List is empty"))
     oldtail = findtail(ll)
-    item = oldtail.data
-    if isa(ll, DoublyLinkedList)
-        newtail = oldtail.previous
-        newtail.next = nothing
-    elseif isa(ll, SinglyLinkedList)
-        newtail = findnode_withnext(ll, oldtail)
-        @assert newtail !== nothing
-        newtail.next = nothing
-    end
-    ll.n -= 1
-    if ll.n == 0 ll.head = nothing end
-    return item
-end
+    remove!(ll, oldtail)
 
-function pop!(ill::MyImprovedLinkedList)
-    ill.n == 0  &&  throw(ArgumentError("List is empty"))
-    oldtail = ill.tail
-    item = oldtail.data
-    if isa(ill, IDoublyLinkedList)
-        newtail = oldtail.previous
-        newtail.next = nothing
-    elseif isa(ill, ISinglyLinkedList)
-        newtail = findnode_withnext(ill, oldtail)
-        @assert newtail !== nothing
-        newtail.next = nothing
-    end
-    ll.n -= 1
-    if ill.n == 0 ill.head = nothing end
-    return item
+    return oldtail.data
 end
 
 """
-    popat!(dll::DoublyLinkedList{T}, position::Int64)
+    popat!(ll::MyAbstractLinkedList{T}, position::Int64)
+    # popat!(sll::SinglyLinkedList{T}, position::Int64)
 
 Removes item at given position in the list. 
 Returns data of item or throws an error if position exceeds length of list. 
 """
 function popat!(
-    dll::Union{DoublyLinkedList{T}, IDoublyLinkedList{T}},
+    ll::MyAbstractLinkedList,
     position::Int64
     ) where {T}
 
-    dll.n == 0  &&  throw(ArgumentError("List is empty"))
-    position <= dll.n ||
-    throw(ArgumentError("Position $position exceed list length of $(dll.n)"))
+    ll.n == 0 && throw(ArgumentError("List is empty"))
 
-    if position == 1
-        return popfirst!(dll)
-    elseif position == dll.n
-        return pop!(dll)
-    end
-
-    node = dll.head
-    counter = 1
-    while counter < position 
-        counter += 1
-        if node.next !== nothing 
-            node = node.next
-        end 
-    end
-
-    previousnode = node.previous
-    nextnode = node.next
-    previousnode.next = nextnode
-    nextnode.previous = previousnode
-    # finish? Do test. Is the above correct? 
-
-    dll.n -= 1
-    if dll.n == 0 dll.head = nothing end
-    return node.data
-end
-
-"""
-    popat!(sll::SinglyLinkedList{T}, position::Int64)
-
-Removes item at given position in the list. 
-Returns data of item or throws an error if position exceeds length of list. 
-"""
-function popat!(
-    sll::Union{SinglyLinkedList{T}, ISinglyLinkedList{T}}, 
-    position::Int64
-    ) where {T}
-
-    sll.n == 0  &&  throw(ArgumentError("List is empty"))
-
-    (position <= sll.n || 
+    (position <= ll.n || 
     throw(ArgumentError(
         "Position $position exceed list length of $(sll.n)"
         ))
     )
 
-
     if position == 1
-        return popfirst!(sll)
-    elseif position == sll.n
-        return pop!(sll)
+        return popfirst!(ll)
+    elseif position == ll.n
+        return pop!(ll)
     end
 
-    node = sll.head
+    node = ll.head
     counter = 1
     while counter < position 
         counter += 1
-        if node.next !== nothing 
-            node = node.next
-        end 
+        node.next isa Nothing || (node = node.next)
     end
-
-    previousnode = findnode_withnext(sll, node)
-    nextnode = node.next
-    previousnode.next = nextnode
-
-    sll.n -= 1
-    if sll.n == 0 sll.head = nothing end
+    remove!(ll, node)
     return node.data
 end
 
@@ -266,21 +284,11 @@ function removeitem!(ll::MyAbstractLinkedList{T}, item::T) where {T}
     node = findfirst(ll, item)
     if isa(node, Nothing)
         return nothing
-    elseif isa(ll, DoublyLinkedList) || isa(ll, IDoublyLinkedList)
-        previousnode = node.previous
-        nextnode = node.next
-        previousnode.next = nextnode
-        nextnode.previous = previousnode
-        # finish? Do test. Is the above correct? 
-    elseif isa(ll, SinglyLinkedList) || isa(ll, ISinglyLinkedList)
-        previousnode = findnode_withnext(ll, node)
-        nextnode = node.next
-        previousnode.next = nextnode
+    else
+        remove!(ll, node)
     end
-    ll.n -= 1
-    if ll.n == 0 ll.head = nothing end
-
-    return item
+    @assert node.data == item
+    return node.data
 end
 
 function append!(firstlist::SinglyLinkedList, secondlist::SinglyLinkedList)
@@ -293,6 +301,7 @@ function append!(firstlist::SinglyLinkedList, secondlist::SinglyLinkedList)
     firstlist.n += secondlist.n
     firstlist
 end
+
 function append!(firstlist::DoublyLinkedList, secondlist::DoublyLinkedList)
     if isempty(firstlist)
         firstlist.head = secondlist.head
@@ -323,26 +332,28 @@ function findtail(ll::MyAbstractLinkedList{T}) where {T}
     return node
 end
 
-# # TODO: tests
 """
-    findnode_withnext(ll::MyAbstractLinkedList{T}, nextnode::MyLinkedListNode{T})
+    findnode_withnext(
+        ll::MyAbstractLinkedList{T}, 
+        nextnode::MyLinkedListNode{T}
+        ) where {T}
 
 Finds the node in the given list that contains the given nextnode, returns node.
 Returns nothing if no such node is found
 """
-function findnode_withnext(ll::MyAbstractLinkedList{T}, 
-    nextnode::MyLinkedListNode{T}) where {T}
+function findnode_withnext(
+    ll::MyAbstractLinkedList{T}, 
+    nextnode::MyLinkedListNode{T}
+    ) where {T}
+    # short-curcuit (error and return) conditions
+    isempty(ll) && throw(BoundsError()) 
+    nextnode == ll.head && return nothing
 
-    # short-curcuit condition
-    isempty(ll) && throw(BoundsError())
-
-    node = ll.head
+    # find next
+    node = ll.head 
     while node.next !== nextnode
-        if node.next !== nothing
-            node = node.next
-        else
-            return nothing
-        end
+        (node.next isa Nothing ? 
+          (return nothing) : (node = node.next))
     end
     return node
 end
@@ -401,6 +412,35 @@ function dllistfromvector(v::Vector{T}) where {T}
         i -= 1
     end
     return newdll
+end
+# Bör göras om som en push! eller pushfirst!(list::DoublyLinkedList, iter...)
+function idllistfromvector(v::Vector{T}) where {T}
+    # short-circuit return conditions
+    length(v) == 0 && return IDoublyLinkedList{T}()
+
+    newidll = IDoublyLinkedList{T}()
+    
+    # Bör finnas ett bättre sätt. Typ mha av iterate grejen
+    i = length(v)
+    while i > 0 
+        push!(newidll, v[i])
+        i -= 1
+    end
+    return newidll
+end 
+
+# Bör göras om som en push! eller pushfirst!(list::SinglyLinkedList, iter...)
+function isllistfromvector(v::Vector{T}) where {T}
+    # short-circuit return conditions
+    length(v) == 0 && return ISinglyLinkedList{T}()
+
+    newisll = ISinglyLinkedList{T}()
+    
+    # Bör finnas ett bättre sätt. Typ mha av iterate grejen
+    for i = 1:length(v)
+        push!(newisll, v[i])
+    end
+    return newisll
 end
 
 function createrandom_sllist(size)
