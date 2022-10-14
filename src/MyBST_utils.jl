@@ -14,6 +14,8 @@ size(node::Union{Nothing, BTNode{K, V}}) where {K,V} = isa(node, Nothing) ? 0 : 
 length(tree::BTree{K, V}) where {K, V} = size(tree.root)
 # length(node::Union{BTNode{K, V}, Nothing}) where {K,V} = isa(node, Nothing) ? 0 : node.n
 
+isless(a::BTNode, b::BTNode) = a.key < b.key 
+isequal(a::BTNode, b::BTNode) = a.key == b.key
 
 """
     add!(node::BTtree{K, V}, key::K, value::V)
