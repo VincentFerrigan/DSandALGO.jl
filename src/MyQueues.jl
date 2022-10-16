@@ -11,25 +11,19 @@ Contains:
 - SLQueue <: MyListQueue <: MyQueue
 - DynamicQueue <: MyVectorQueue <: MyQueue
 # Utils
+- length
 - isempty
-- dequeue! (only one method: MyListQueue)
-- enqueue! (currently only one method for MyListQueue)
-
-## TODO: 
-- dequeue for MyVectorQueue
-- enqueue for MyVectorQueue
-- stacksize
-- stackceiling
-- resizestack
-- length or size
-- peeks? Peek last and peek first?????
+- queuecapacity
+- enqueue! Two mehtods
+- dequeue! Two mehtods
+- resizequeue!
 """
 
 module MyQueues
 include("MyLL.jl")
 import .MyLL
 
-import Base: isempty, size, length # size or length or both????
+import Base: isempty, length 
 
 include("MyQueues_types.jl") # includes types
 include("MyQueues_utils.jl") # includes all functions 
