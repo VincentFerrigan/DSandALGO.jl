@@ -6,6 +6,7 @@ abstract type MyAbstractHeap{T} end
 abstract type MyVectorPQ{T} <: MyAbstractHeap{T} end
 abstract type MyListPQ{T} <: MyAbstractHeap{T} end
 
+
 mutable struct MaxVectorPQ{T} <: MyVectorPQ{T}
     pq
     size
@@ -30,6 +31,20 @@ mutable struct MinVectorPQ{T} <: MyVectorPQ{T}
         h = new(v, length(v))
         build_minmax_pq!(h)
     end
+end
+
+mutable struct MaxDynamicPQ{T} <: MyVectorPQ{T}
+    pq::Vector{Union{Nothing, T}} # or items?
+    first
+    last
+    size # n?
+
+    (MaxDynamicPQ{T}(capacity = 4) where {T} =
+      new{T}(
+        Vector{Union{Nothing, T}}(nothing, capacity), 
+        1, 
+        1, 
+        0))
 end
 
 # outerconstruct

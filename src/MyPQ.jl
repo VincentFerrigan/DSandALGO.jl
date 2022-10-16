@@ -36,8 +36,8 @@ Contains:
 * popmax!
 
 # base overload methods
-* pop! # not yet tested
 * push!
+* pop! # not yet tested
 * first
 
 # functions and methods
@@ -55,20 +55,18 @@ Contains:
 module MyPQ
 
 import Base: length, isempty, isless, isequal, show
-import Base: minimum, maximum, push!, pop!, first
+import Base: minimum, maximum, push!, pop!, first, resize!
 
-# include("MyBST.jl")
 include("MyPQ_types.jl") # includes types and outer constructs
 include("MyPQ_utils.jl") # includes all functions for linkedlists
 
-# using .MyBST
 # for export
-export MaxVectorPQ, MinVectorPQ, VectorPQNode # constructors
+export MaxVectorPQ, MinVectorPQ, VectorPQNode, MaxDynamicPQ # constructors
 export heapsort!, popmin!, popmax! # methods
 export push!, minimum, maximum # base overload for export
 
 # for unittesting
-export hparent, lchild, rchild, capacity # utilitys for testing
+export hparent, lchild, rchild, capacityleft # utilitys for testing
 export pop!, length, isempty, isless, show # base overload for testing
 
 end # module

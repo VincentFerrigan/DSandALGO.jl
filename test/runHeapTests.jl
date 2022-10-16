@@ -14,6 +14,7 @@ using .MyPQ
     @test lchild(3) == 6
     @test hparent(3) == 1
 end
+
 @testset "Build maxheps" begin
     v = [4, 2, 37, 9]
     a = VectorPQNode(70,2)
@@ -34,16 +35,16 @@ end
     maxheapsimple = MaxVectorPQ(v)
     @test maximum(maxheapsimple) == 37
     @test length(maxheapsimple) == 4
-    @test capacity(maxheapsimple) == 0
+    @test capacityleft(maxheapsimple) == 0
     @test popmax!(maxheapsimple) == 37
     @test maximum(maxheapsimple) == 9
-    @test capacity(maxheapsimple) == 1
+    @test capacityleft(maxheapsimple) == 1
     @test maximum(maxheapsimple) == 9
     push!(maxheapsimple, 100)
     @test popmax!(maxheapsimple) == 100
     push!(maxheapsimple, 100)
     @test maximum(maxheapsimple) == 100
-    @test capacity(maxheap) == 10
+    @test capacityleft(maxheap) == 10
     @test isempty(maxheap) == true
     @test isempty(maxheapsimple) == false
     push!(maxheap, c)
@@ -52,7 +53,7 @@ end
     @test maximum(maxheap) == c
     push!(maxheap, a)
     @test maximum(maxheap) == a
-    @test capacity(maxheap) == 7
+    @test capacityleft(maxheap) == 7
     @test length(maxheap) == 3
     push!(maxheap, d)
     @test maximum(maxheap) == a
@@ -74,9 +75,9 @@ end
     minheapsimple = MinVectorPQ(v)
     @test minimum(minheapsimple) == 2
     @test length(minheapsimple) == 4
-    @test capacity(minheapsimple) == 0
+    @test capacityleft(minheapsimple) == 0
     @test isempty(minheapsimple) == false
-    @test capacity(minheap) == 10
+    @test capacityleft(minheap) == 10
     @test isempty(minheap) == true
     push!(minheap, c)
     @test minimum(minheap) == c
@@ -84,7 +85,7 @@ end
     @test minimum(minheap) == b
     push!(minheap, a)
     @test minimum(minheap) == b
-    @test capacity(minheap) == 7
+    @test capacityleft(minheap) == 7
     @test length(minheap) == 3
     push!(minheap, d)
     @test minimum(minheap) == d
@@ -93,6 +94,42 @@ end
 
     heapsort!(v)
     @test v == [2,4,9,37]
+end
+
+@testset "Build DynamicMaxHeps" begin
+    a = VectorPQNode(70,2)
+    b = VectorPQNode(3,2)
+    b2 = VectorPQNode(3,2)
+    c = VectorPQNode(40,2)
+    d = VectorPQNode(1,0)
+    e = VectorPQNode(100,3)
+    f = VectorPQNode(6,3)
+    g = VectorPQNode(1001,3)
+
+    dynamicmaxheap = MaxDynamicPQ{VectorPQNode{Int64, Int64}}()
+    @test capacityleft(dynamicmaxheap) == 4
+    @test isempty(dynamicmaxheap) == true
+    push!(dynamicmaxheap, c)
+    @test maximum(dynamicmaxheap) == c
+    push!(dynamicmaxheap, b)
+    @test maximum(dynamicmaxheap) == c
+    push!(dynamicmaxheap, a)
+    @test maximum(dynamicmaxheap) == a
+    @test capacityleft(dynamicmaxheap) == 1
+    @test length(dynamicmaxheap) == 3
+    push!(dynamicmaxheap, d)
+    @test maximum(dynamicmaxheap) == a
+    @test capacityleft(dynamicmaxheap) == 0
+    # här är du!!!!!! Nu ska du test resize, har du skrivit den än?
+    push!(dynamicmaxheap, e)
+    @test maximum(dynamicmaxheap) == e
+    @test capacityleft(dynamicmaxheap) == 3
+    @test popmax!(dynamicmaxheap) == e
+    @test popmax!(dynamicmaxheap) == a
+    @test maximum(dynamicmaxheap) == c
+    push!(dynamicmaxheap, g)
+    @test maximum(dynamicmaxheap) == g
+
 end
 
 v = [16,14,10,18,7,9,3,2,4,1]
