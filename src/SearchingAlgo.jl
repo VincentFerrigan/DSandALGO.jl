@@ -30,11 +30,15 @@ function find_intersection(firstlist::Vector{T},
     return intersectionlist
 end
 
-function linear_search(vector::Vector{T}, key::T; 
-    first = 1, last = size(vector)[1]) where {T}
+function linear_search(
+    vector::Vector{T}, 
+    key::T; 
+    first = 1, 
+    last = size(vector)[1]
+    ) where {T}
 
     for i in first:last
-        if vector[i] == key
+        if isequal(vector[i], key)
             return i
         end
     end
@@ -50,7 +54,8 @@ function binary_search(
     
     while left <= right
         median = Int(floor((left+right)/2))
-        if vector[median] == value
+        if isequal(vector[median], value)
+        # if vector[median] == value
             return median 
         elseif vector[median] > value
             right =  median - 1

@@ -9,13 +9,33 @@ lchild = k -> <<(k, 1)
 """ rchild(k) = ``k -> 2*k+1``"""
 rchild = k -> +(<<(k, 1), 1)
 
+
+
 # base overload utils
-length(h::MyVectorPQ) = h.size
+isempty(tree::TreePQ) = isempty(tree.root)
+isempty(node::Union{BTNode{K, V}, Nothing}) where {K,V} = node === nothing ? true : false
 isempty(h::MyVectorPQ) = h.size == 0 ? true : false
+
+length(h::MyVectorPQ) = h.size
+size(tree::TreePQ) = size(tree.root)
+size(node::Union{Nothing, BTNode{K, V}}) where {K,V} = begin 
+    isa(node, Nothing) ? 0 : node.size end
+
 isless(a::VectorPQNode, b::VectorPQNode) = a.key < b.key 
+isless(a::BTNode, b::BTNode) = a.key < b.key 
+
 isequal(a::VectorPQNode, b::VectorPQNode) = a.key == b.key
-show(n::VectorPQNode) = print("[", n.key, " => ", n.value, "]")
+isequal(a::BTNode, b::BTNode) = a.key == b.key
+
+show(io::IO, n::VectorPQNode) = print("[", n.key, " => ", n.value, "]")
+function show(io::IO, node::BTNode{K,V}) where {K,V}
+    print("[", node.key, " => ", node.value, " (", node.size, ")", "]")
+end
+
 minimum(h::MinVectorPQ) = first(h)
+minimum(h::TreePQ) = first(h)
+minimum(h::MinDynamicPQ) = first(h)
+
 maximum(h::MaxVectorPQ) = first(h)
 maximum(h::MaxDynamicPQ) = first(h)
 
@@ -25,8 +45,26 @@ capacityleft(h::MyVectorPQ) = capacity(h) - length(h)
 
 # wrappers
 popmin!(h::MinVectorPQ) = pop!(h)
+popmin!(h::MinDynamicPQ) = pop!(h)
 popmax!(h::MaxVectorPQ) = pop!(h)
 popmax!(h::MaxDynamicPQ) = pop!(h)
+
+function iterate(tree::TreePQ{K,V}) where {K, V} #BFS
+    isempty(tree) && return nothing
+    node = tree.root
+    queue = DynamicQueue{Union{BTNode{K, V}, Nothing}}()
+    !isa(node.left, Nothing) && enqueue!(queue, node.left)
+    !isa(node.right, Nothing) && enqueue!(queue, node.right)
+    return node, queue
+end
+
+function iterate(_::TreePQ{K, V}, queue) where {K,V} # BFS
+    node = dequeue!(queue)
+    isa(node, Nothing) && return nothing
+    !isa(node.left, Nothing) && enqueue!(queue, node.left)
+    !isa(node.right, Nothing) && enqueue!(queue, node.right)
+    return node, queue 
+end
 
 # base overload methods
 """ 
@@ -42,7 +80,7 @@ function push!(h::MyVectorPQ{T}, key::T) where {T}
     swim!(h, keypos)
 end
 
-function push!(h::MaxDynamicPQ, key::T) where {T}
+function push!(h::MyDynamicPQ, key::T) where {T}
     (length(h)  == capacity(h) #  or capacityleft(h) > 0 || resize!(h, *....)
       && resize!(h, *(capacity(h), 2)))
 
@@ -71,7 +109,7 @@ function pop!(h::MyVectorPQ{T}, size = length(h)) where {T}
     return item
 end
 
-function pop!(h::MaxDynamicPQ{T}, size = length(h)) where {T}
+function pop!(h::MyDynamicPQ{T}, size = length(h)) where {T}
     (length(h) > 0 
       && length(h) == ÷(capacity(h), 4)
       && resize!(h, ÷(h, 2)))
@@ -94,9 +132,14 @@ function first(h::MyVectorPQ{T}) where {T}
     return h.pq[1]
 end
 
-function first(h::MaxDynamicPQ{T}) where {T}
+function first(h::MyDynamicPQ{T}) where {T}
     isempty(h) && nothing
     return h.pq[h.first]
+end
+
+function first(t::TreePQ)
+    isempty(t) && nothing
+    return t.root
 end
 
 # Function and methods
@@ -138,7 +181,7 @@ Recursive Top Down Reheapify (sink).
 Switch ``keypos`` to ``parent``?
 """
 function heapify!( # same as sink?
-    h::MaxVectorPQ{T}, 
+    h::Union{MaxVectorPQ{T}, MaxDynamicPQ{T}},
     keypos, 
     size = length(h)
     ) where {T}
@@ -169,7 +212,7 @@ Switch ``keypos`` to ``parent``?
 # Är detta något jag kommer använda?? Och hur?
 """
 function heapify!( # same as sink?
-    h::MinVectorPQ{T}, 
+    h::Union{MinVectorPQ{T}, MinDynamicPQ{T}},
     keypos,
     size = length(h)
     ) where {T}
@@ -192,35 +235,35 @@ function heapify!( # same as sink?
     end
 end
 
-""" 
-    heapify!(h::MaxDynamicPQ{T}, keypos, size = length(h))
+# """ 
+#     heapify!(h::MaxDynamicPQ{T}, keypos, size = length(h))
 
-Recursive Top Down Reheapify (sink). 
-Switch ``keypos`` to ``parent``?
-"""
-function heapify!( # same as sink?
-    h::MaxDynamicPQ{T}, 
-    keypos, 
-    size = length(h)
-    ) where {T}
-    left = lchild(keypos) # 2 * keypos
-    right = rchild(keypos) # 2 * keypos + 1
+# Recursive Top Down Reheapify (sink). 
+# Switch ``keypos`` to ``parent``?
+# """
+# function heapify!( # same as sink?
+#     h::MaxDynamicPQ{T}, 
+#     keypos, 
+#     size = length(h)
+#     ) where {T}
+#     left = lchild(keypos) # 2 * keypos
+#     right = rchild(keypos) # 2 * keypos + 1
 
-    largest = keypos
-    (left <= size   # parent < left child ?
-      && (isless(h.pq[largest], h.pq[left]))
-      && (largest = left))
+#     largest = keypos
+#     (left <= size   # parent < left child ?
+#       && (isless(h.pq[largest], h.pq[left]))
+#       && (largest = left))
 
-    (right <= size  # parent < right child ?
-      && (isless(h.pq[largest], h.pq[right]))
-      && (largest = right))
+#     (right <= size  # parent < right child ?
+#       && (isless(h.pq[largest], h.pq[right]))
+#       && (largest = right))
 
-    # sink parent if children are larger
-    if largest != keypos
-        h.pq[keypos], h.pq[largest] = h.pq[largest], h.pq[keypos]
-        return heapify!(h, largest)
-    end
-end
+#     # sink parent if children are larger
+#     if largest != keypos
+#         h.pq[keypos], h.pq[largest] = h.pq[largest], h.pq[keypos]
+#         return heapify!(h, largest)
+#     end
+# end
 
 """
     heapsort!(v::Vector{T}, n = length(v)) where {T}
@@ -277,7 +320,16 @@ function swim!(h::MaxDynamicPQ{T}, keypos) where{T}
     end
 end
 
-function resize!(h::MaxDynamicPQ{T}, newsize) where {T}
+function swim!(h::MinDynamicPQ{T}, keypos) where{T}
+    parent = hparent(keypos) # ⌊keypos/2⌋
+
+    if parent >= h.first && isless(h.pq[keypos], h.pq[parent])
+        h.pq[keypos], h.pq[parent] = h.pq[parent], h.pq[keypos]
+        return swim!(h, parent)
+    end
+end
+
+function resize!(h::MyDynamicPQ{T}, newsize) where {T}
 	temp = Array{Union{Nothing, T}}(nothing, newsize)
 
     for i = 1:length(h)
@@ -290,3 +342,133 @@ function resize!(h::MaxDynamicPQ{T}, newsize) where {T}
     h.last = h.first + h.size
 	return
 end
+
+function add!(
+    tree::TreePQ{K,V},
+    key::K,
+    value::V
+    ) where {K,V}
+
+    tree.root = add!(tree.root, key, value)
+    return tree
+end
+
+function add!(
+    node::Union{BTNode{K, V}, Nothing},
+    key::K,
+    value::V
+    ) where {K, V}
+
+    if isa(node, Nothing)
+        node = BTNode{K, V}(key, value, nothing, nothing, 1)
+        return node
+    end
+
+    if key < node.key
+        key, node.key = node.key, key
+        value, node.value = node.value, value
+    end
+
+    if isa(node.left, Nothing)
+        # node.left = add!(node.left, key, value)
+        node.left = BTNode{K, V}(key, value, nothing, nothing, 1)
+        node.size += 1
+        return node
+    elseif isa(node.right, Nothing)
+        # node.right = add!(node.right, key, value)
+        node.right = BTNode{K, V}(key, value, nothing, nothing, 1)
+        node.size += 1
+        return node
+    end
+
+    if size(node.left) < 3
+        add!(node.left, key, value)
+    elseif size(node.right) < 3
+        add!(node.right, key, value)
+    elseif size(node.left) < rchild(size(node.right))
+        add!(node.left, key, value)
+    else
+        add!(node.right, key, value)
+    end
+
+    node.size = size(node.left) + size(node.right) + 1 # osäker
+    return node
+end
+
+function remove!(tree::TreePQ{K,V}) where {K,V}
+    node = tree.root
+    newnode = remove!(node)
+    tree.root = newnode
+    return node
+end
+    
+function remove!(
+    node::Union{BTNode{K, V}, Nothing}
+    ) where {K,V}
+    
+    isa(node, Nothing) && return nothing
+    # node.size == 1 && return node
+
+    if isa(node.left, Nothing)
+    #   && node = remove!(node.right)
+        node = node.right
+        return node
+    elseif isa(node.right, Nothing)
+        # node = remove!(node.left)
+        node = node.left
+        return node
+    end
+
+    if isless(node.right, node.left)
+        node.key = node.right.key
+        node.value = node.right.value
+        node.right = remove!(node.right)
+    else
+        node.key = node.left.key
+        node.value = node.left.value
+        node.left = remove!(node.left)
+    end
+    node.size -= 1
+    return node
+    
+end
+
+# JUST FOR TESTING
+print_tabs(numtabs::Int64) = for i = 1:numtabs print("  ") end
+
+function print_tree(tree::TreePQ{K,V}, 
+    node::Union{BTNode{K, V}, Nothing} = tree.root
+    ) where {K, V}
+
+    node === nothing && println("---<empty>---") && return
+    println("ROOT")
+    print_tree(node, 0)
+    println("DONE")
+end
+
+function print_tree(
+    node::Union{BTNode{K,V},Nothing}, 
+    level::Int64
+    ) where {K,V}
+
+    if node === nothing
+        print_tabs(level)
+        println("---<empty>---")
+        return
+    end
+
+    print_tabs(level)
+    println(node) # Should work thanks to show
+
+    print_tabs(level)
+    println("LEFT")
+    print_tree(node.left, (level += 1))
+
+    print_tabs(level)
+    println("RIGHT")
+    print_tree(node.right, (level += 1))
+
+    print_tabs(level)
+    println("LEAF")
+end
+    

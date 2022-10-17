@@ -106,7 +106,7 @@ end
 
 
 function show(io::IO, node::BTNode{K,V}) where {K,V}
-    print(" key: ", node.key, " => value: ", node.value)
+    print(" key: ", node.key, " => value: ", node.value, "(", node.n, ")")
 end
 
 function binary_search(
@@ -204,8 +204,8 @@ end
 
 # TESTA OM DEN FUNKAR BRA SOM ITERATE
 # Node, Left, Right
-# function preorder3(
-function iterate(tree::BTree{K,V}) where {K, V}
+function preeorder3(tree::BTree{K,V}) where {K, V}
+# function iterate(tree::BTree{K,V}) where {K, V}
     isempty(tree) && return nothing
     node = tree.root
     stack = SinglyLLStack{Union{BTNode{K, V}, Nothing}}()
@@ -214,8 +214,8 @@ function iterate(tree::BTree{K,V}) where {K, V}
     return node, stack
 end
 
-# function preorder3(_::BTree{K, V}, stack) where {K,V} # Node, Left, Right
-function iterate(_::BTree{K, V}, stack) where {K,V} # Node, Left, Right
+function preorder3(_::BTree{K, V}, stack) where {K,V} # Node, Left, Right
+# function iterate(_::BTree{K, V}, stack) where {K,V} # Node, Left, Right
     node = pop!(stack)
     isa(node, Nothing) && return nothing
     !isa(node.right, Nothing) && push!(stack, node.right)
@@ -281,18 +281,18 @@ function preorder(_::BTree{K, V}, stack) where {K,V} # Node, Left, Right
     return nothing
 end
 
-# function iterate(tree::BTree{K,V}) where {K, V}
-function bfs(tree::BTree{K,V}) where {K, V}
+function iterate(tree::BTree{K,V}) where {K, V}
+# function bfs(tree::BTree{K,V}) where {K, V}
+    isempty(tree) && return nothing
     node = tree.root
-    isa!(node, Nothing) && return nothing
     queue = DynamicQueue{Union{BTNode{K, V}, Nothing}}()
     !isa(node.left, Nothing) && enqueue!(queue, node.left)
     !isa(node.right, Nothing) && enqueue!(queue, node.right)
     return node, queue
 end
 
-function bfs(_::BTree{K, V}, queue) where {K,V} # BFS
-# function iterate(_::BTree{K, V}, queue) where {K,V} # BFS
+function iterate(_::BTree{K, V}, queue) where {K,V} # BFS
+# function bfs(_::BTree{K, V}, queue) where {K,V} # BFS
     node = dequeue!(queue)
     isa(node, Nothing) && return nothing
     !isa(node.left, Nothing) && enqueue!(queue, node.left)

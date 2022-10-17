@@ -37,7 +37,7 @@ end
                 @test check_personalnumber(hp35_ds2, personnummer)
                 @test check_personalnumber(hp35_ls2, personnummer)
             else
-                throw(ArgumentError("Non a valid personal number"))
+                throw(ArgumentError("Not a valid personal number"))
             end
         end
     end

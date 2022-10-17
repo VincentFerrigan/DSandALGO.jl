@@ -132,29 +132,132 @@ end
 
 end
 
-v = [16,14,10,18,7,9,3,2,4,1]
-v2 = [16,14,10,18,7,9,3,2,4,1]
-v3 = [16,14,10,8,100,7,9,3,2,4,1]
+@testset "Build DynamicMinHeps" begin
+    a = VectorPQNode(70,2)
+    b = VectorPQNode(3,2)
+    b2 = VectorPQNode(3,2)
+    c = VectorPQNode(40,2)
+    d = VectorPQNode(1,0)
+    e = VectorPQNode(100,3)
+    f = VectorPQNode(6,3)
+    g = VectorPQNode(1001,3)
 
-println("v: ", v)
-println("v2: ", v2)
+    dynamicminheap = MinDynamicPQ{VectorPQNode{Int64, Int64}}()
+    @test capacityleft(dynamicminheap) == 4
+    @test isempty(dynamicminheap) == true
+    push!(dynamicminheap, c)
+    @test minimum(dynamicminheap) == c
+    push!(dynamicminheap, b)
+    @test minimum(dynamicminheap) == b
+    push!(dynamicminheap, a)
+    @test minimum(dynamicminheap) == b
+    @test capacityleft(dynamicminheap) == 1
+    @test length(dynamicminheap) == 3
+    push!(dynamicminheap, d)
+    @test minimum(dynamicminheap) == d
+    @test capacityleft(dynamicminheap) == 0
+    # # här är du!!!!!! Nu ska du test resize, har du skrivit den än?
+    push!(dynamicminheap, e)
+    @test minimum(dynamicminheap) == d
+    @test capacityleft(dynamicminheap) == 3
+    @test popmin!(dynamicminheap) == d
+    @test popmin!(dynamicminheap) == b
+    @test minimum(dynamicminheap) == c
+    push!(dynamicminheap, g)
+    @test minimum(dynamicminheap) == c
 
-heap = MaxVectorPQ(v)
-println("heap(v) ", heap.pq)
-heapsort!(v2)
-println("heapsorted v2: ", v2)
+end
 
-println("")
-println("v3: ", v3)
-heap3 = MaxVectorPQ(v3)
-println("heap(v3)", heap3.pq)
+@testset "Build TreePQ" begin
+    treepq = TreePQ{Int64,String}()
+    add!(treepq, 3, "tre")
+    @test minimum(treepq).key == 3
+    add!(treepq, 4, "fyra")
+    @test minimum(treepq).key == 3
+    add!(treepq, 2, "två")
+    @test minimum(treepq).key == 2
+    add!(treepq, 7, "sju")
+    @test minimum(treepq).key == 2
+    add!(treepq, 5, "fem")
+    @test minimum(treepq).key == 2
+    add!(treepq, 1, "ett")
+    @test minimum(treepq).key == 1
+    add!(treepq, 6, "sex")
+    @test minimum(treepq).key == 1
+    add!(treepq, 8, "åtta")
+    @test minimum(treepq).key == 1
+    add!(treepq, 9, "nio")
+    @test minimum(treepq).key == 1
+    add!(treepq, 10, "tio")
+    add!(treepq, 11, "elva")
+    add!(treepq, 12, "tolv")
 
-heapsort!(heap3.pq)
-println("heapsorted heap(v3): ", heap3.pq)
+    # println("TESTBFS")
+    # for node in treepq
+    #     println(node)
+    # end
+    # println("TESTPRINT")
+    # MyPQ.print_tree(treepq)
 
-println("")
-test = [6,140,10,8,100,7,9,3,2,4,11]
-test2 = [6,140,10,8,100,7,9,3,2,4,11]
-println("test v: ", test)
-heapmin = MinVectorPQ(test)
-println("heapmin of v: ", heapmin.pq)
+    # println("remove top")
+    @test minimum(treepq).key == 1
+    remove!(treepq)
+    @test minimum(treepq).key == 2
+    remove!(treepq)
+    @test minimum(treepq).key == 3
+    remove!(treepq)
+    @test minimum(treepq).key == 4
+    remove!(treepq)
+    @test minimum(treepq).key == 5
+    remove!(treepq)
+
+    # println("TESTBFS")
+    # for node in treepq
+    #     println(node)
+    # end
+    # println("TESTPRINT")
+    # MyPQ.print_tree(treepq)
+
+    @test minimum(treepq).key == 6
+    remove!(treepq)
+    @test minimum(treepq).key == 7
+    remove!(treepq)
+    @test minimum(treepq).key == 8
+    remove!(treepq)
+    @test minimum(treepq).key == 9
+    remove!(treepq)
+    @test minimum(treepq).key == 10
+    remove!(treepq)
+    @test minimum(treepq).key == 11
+    remove!(treepq)
+    @test minimum(treepq).key == 12
+    remove!(treepq)
+    @test minimum(treepq) === nothing
+end
+
+# v = [16,14,10,18,7,9,3,2,4,1]
+# v2 = [16,14,10,18,7,9,3,2,4,1]
+# v3 = [16,14,10,8,100,7,9,3,2,4,1]
+
+# println("v: ", v)
+# println("v2: ", v2)
+
+# heap = MaxVectorPQ(v)
+# println("heap(v) ", heap.pq)
+# heapsort!(v2)
+# println("heapsorted v2: ", v2)
+
+# println("")
+# println("v3: ", v3)
+# heap3 = MaxVectorPQ(v3)
+# println("heap(v3)", heap3.pq)
+
+# heapsort!(heap3.pq)
+# println("heapsorted heap(v3): ", heap3.pq)
+
+# println("")
+# test = [6,140,10,8,100,7,9,3,2,4,11]
+# test2 = [6,140,10,8,100,7,9,3,2,4,11]
+# println("test v: ", test)
+# heapmin = MinVectorPQ(test)
+# println("heapmin of v: ", heapmin.pq)

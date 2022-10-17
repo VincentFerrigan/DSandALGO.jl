@@ -7,6 +7,10 @@ Author: Vincent Ferrigan, ferrigan@kth.se
 Date: 2022-10-13
 Notes:
 
+
+TODO: add utils form MinDynamicPQ
+add utils for BSTNodes
+
 Contains:
 # Types
 * MaxVectorPQ{T} <: MyVectorPQ{T} <: MyAbstractHeap{T}
@@ -14,9 +18,6 @@ Contains:
 * MyListPQ{T} <: MyAbstractHeap{T} # not done yet
 * VectorPQNode{K, V}
 # Utils
-
-
-
 ## Heap arithmatic
 * hparent
 * lchild
@@ -37,14 +38,14 @@ Contains:
 
 # base overload methods
 * push!
-* pop! # not yet tested
+* pop! 
 * first
 
 # functions and methods
 * build_minmax_pq! - 2 methods
-* heapify! - 2 methods
+* heapify! - 3 methods
 * heapsort!
-* swim! - 2 methods
+* swim! - 3 methods
 
 # todo
 ## List/Tree based - AVL? Balanced BST?
@@ -54,19 +55,27 @@ Contains:
 """
 module MyPQ
 
-import Base: length, isempty, isless, isequal, show
+import Base: length, isempty, isless, isequal, show, size, iterate
 import Base: minimum, maximum, push!, pop!, first, resize!
 
 include("MyPQ_types.jl") # includes types and outer constructs
 include("MyPQ_utils.jl") # includes all functions for linkedlists
 
+include("MyQueues.jl")
+using .MyQueues
+
 # for export
-export MaxVectorPQ, MinVectorPQ, VectorPQNode, MaxDynamicPQ # constructors
+export MaxVectorPQ, MinVectorPQ # constructors (Static Vectors)
+export MaxDynamicPQ, MinDynamicPQ # constructors (Dynamic Vectors)
+export VectorPQNode # constructor (Dynamic Vector Node)
+export TreePQ, BTNode # constructors (Tree and tree nodes)
 export heapsort!, popmin!, popmax! # methods
+export remove!, add! # NOTTESTEDDDDD
 export push!, minimum, maximum # base overload for export
+
 
 # for unittesting
 export hparent, lchild, rchild, capacityleft # utilitys for testing
-export pop!, length, isempty, isless, show # base overload for testing
+export pop!, length, isempty, isless, show, size # base overload for testing
 
 end # module
