@@ -4,7 +4,11 @@
 
 Author: Vincent Ferrigan, ferrigan@kth.se
 Date: 2022-10-17
-Notes:
+Notes: Works with SearchingAlgo (linear_search and binary_search, see
+runHashTests.jl). 
+
+# Todo:
+* see MyHash.jl
 
 Contains:
 # Types
@@ -12,8 +16,8 @@ Contains:
 * ZipNode
 # Utils
 ## Base overload utils
-* isless
-* isequal
+* isless - 3 methods
+* isequal - 3 methods
 * show
 """
 

@@ -7,9 +7,12 @@ Author: Vincent Ferrigan, ferrigan@kth.se
 Date: 2022-10-13
 Notes:
 
+TODO: 
+* add increase key/prio functionality and BenchMarks
+* Test key/prio increase func
+* Benchmark 
+* IMRaD
 
-TODO: add utils form MinDynamicPQ
-add utils for BSTNodes
 
 Contains:
 # Types
@@ -31,17 +34,17 @@ Contains:
 * minimum
 * maximum
 
-# short utils and wrappers
+## short utils and wrappers
 * capacity
 * popmin!
 * popmax!
 
-# base overload methods
+## base overload methods
 * push!
 * pop! 
 * first
 
-# functions and methods
+## functions and methods
 * build_minmax_pq! - 2 methods
 * heapify! - 3 methods
 * heapsort!
@@ -72,7 +75,6 @@ export TreePQ, BTNode # constructors (Tree and tree nodes)
 export heapsort!, popmin!, popmax! # methods
 export remove!, add! # NOTTESTEDDDDD
 export push!, minimum, maximum # base overload for export
-
 
 # for unittesting
 export hparent, lchild, rchild, capacityleft # utilitys for testing

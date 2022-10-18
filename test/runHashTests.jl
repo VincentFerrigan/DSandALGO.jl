@@ -5,8 +5,14 @@ using Revise
 
 include("../src/Zip.jl")
 include("../src/SearchingAlgo.jl")
+include("../src/MyHash.jl")
+
 using .Zip
 using .SearchingAlgo
+using .MyHash
+
+# TODO:
+# * test buckets in acc with hash.pdf
 
 @testset "read first lines from file" begin
     fname = "test/input/postnummer.csv"

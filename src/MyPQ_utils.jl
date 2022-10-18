@@ -13,7 +13,8 @@ rchild = k -> +(<<(k, 1), 1)
 
 # base overload utils
 isempty(tree::TreePQ) = isempty(tree.root)
-isempty(node::Union{BTNode{K, V}, Nothing}) where {K,V} = node === nothing ? true : false
+isempty(node::Union{BTNode{K, V}, Nothing}) where {K,V} = begin
+    isa(node, Nothing) ? true : false end
 isempty(h::MyVectorPQ) = h.size == 0 ? true : false
 
 length(h::MyVectorPQ) = h.size
@@ -235,36 +236,6 @@ function heapify!( # same as sink?
     end
 end
 
-# """ 
-#     heapify!(h::MaxDynamicPQ{T}, keypos, size = length(h))
-
-# Recursive Top Down Reheapify (sink). 
-# Switch ``keypos`` to ``parent``?
-# """
-# function heapify!( # same as sink?
-#     h::MaxDynamicPQ{T}, 
-#     keypos, 
-#     size = length(h)
-#     ) where {T}
-#     left = lchild(keypos) # 2 * keypos
-#     right = rchild(keypos) # 2 * keypos + 1
-
-#     largest = keypos
-#     (left <= size   # parent < left child ?
-#       && (isless(h.pq[largest], h.pq[left]))
-#       && (largest = left))
-
-#     (right <= size  # parent < right child ?
-#       && (isless(h.pq[largest], h.pq[right]))
-#       && (largest = right))
-
-#     # sink parent if children are larger
-#     if largest != keypos
-#         h.pq[keypos], h.pq[largest] = h.pq[largest], h.pq[keypos]
-#         return heapify!(h, largest)
-#     end
-# end
-
 """
     heapsort!(v::Vector{T}, n = length(v)) where {T}
 # Sorterar i växande ordning
@@ -434,6 +405,9 @@ function remove!(
 end
 
 # JUST FOR TESTING
+# JUST FOR TESTING
+# JUST FOR TESTING
+
 print_tabs(numtabs::Int64) = for i = 1:numtabs print("  ") end
 
 function print_tree(tree::TreePQ{K,V}, 
