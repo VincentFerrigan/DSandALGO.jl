@@ -7,6 +7,7 @@ Date: 2022-10-18
 Notes:
 
 # TODO: 
+* add get function
 * test Buckets in accordance with hash.pdf
 * add Linear probing
 * Benchmarks
@@ -14,7 +15,9 @@ Notes:
 
 Contains:
 # Types
-* 
+* Buckets
+* Node
+
 # Utils
 ## Base overload utils
 * isempty 
@@ -27,21 +30,23 @@ Contains:
 
 ## Base overload methods
 * pushfirst!
+* get
+* insert!
 
 ## functions and methods
 * hashingByDivision
-* add!
 """
 
 module MyHash
 
 import Base: isempty, isequal, size
-import Base: pushfirst!
+import Base: pushfirst!, insert!, get
 
 include("MyHash_types.jl")
 include("MyHash_utils.jl")
 
 export Buckets # Constructors
-export add!
+export Node # Node constructor (for unit testing)
+export insert!, get # base overload method
 
 end # module

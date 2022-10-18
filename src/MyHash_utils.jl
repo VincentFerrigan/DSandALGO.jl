@@ -2,19 +2,30 @@
 # Utils for MyHash module in MyHash.jl
 
 ## Base overload utils
-isempty(node::Union{Node{K,T}, Nothing}) where {K,T} = begin
+isempty(node::Union{Nothing, Node{K,T}}) where {K,T} = begin
     isa(node, Nothing) ? true : false end
 
 isequal(a::Node{K,T}, b::Node{K,T}) where {K,T} = a.key == b.key
 isequal(a::Node{K,T}, key::K) where {K,T} = a.key == key
 isequal(key::K, b::Node{K,T}) where {K,T} = key == b.key
 
-size(node::Union{Nothing, BTNode{K,T}}) where {K,V} = begin
+size(node::Union{Nothing, Node{K,T}}) where {K,T} = begin
     isa(node, Nothing) ? 0 : node.size end
 
 ## Short utils and wrappers
-m(b::Buckets) -> b.mod
-hashing(key, m) -> hashingByDivision(key, m)
+m = (b::Buckets) -> b.mod
+hashing = (key, m) -> hashingByDivision(key, m)
+getchainsize = (b, key) -> size(b.data[hashing(key, m(b))])
+
+## Base overload method (wrapper)
+"""
+    get(b::Buckets{K,T}, key::K)::Union{Nothing, T}
+Wrapper
+"""
+get(b::Buckets{K,T}, key::K) where {K, T} = begin
+    node = search(b, key)
+    return isa(node, Nothing) ? nothing : return node.entry
+end
 
 ## Base overload methods
 function pushfirst!(
@@ -22,8 +33,14 @@ function pushfirst!(
     key::K, 
     entry::T) where {K,T}
 
-    (isempty(node) ? Node(key, entry, nothing, 1)
-    : Node(key, entry, node, size(node) + 1))
+    if isa(node, Nothing)
+        return Node(key, entry, nothing, 1)
+    else
+        return Node(key, entry, node, (node.size + 1))
+    end
+    # (return isa(node, Nothing)
+    # ? node(key, entry, nothing, 1) 
+    # : Node(key, entry, node, size(node) + 1))
 end
 
 ## functions and methods
@@ -39,16 +56,39 @@ function hashingByDivision(key::Integer, m) # or where T <: Int
 end
 
 """ 
-    add!()
+    insert!(b::Buckets{K,T}, key::K, entry::T)::Node{K,T}
 
 Adds an entry without checking for duplicates
 """
-function add!(
-    b::Buckets{T},
+function insert!(
+    b::Buckets{K,T},
     key::K,
     entry::T
-    ) where {T,K}
+    ) where {K,T}
 
-    h_value = hasing(key, m(b))
+    h_value = hashing(key, m(b))
     b.data[h_value] = pushfirst!(b.data[h_value], key, entry)
+    # (b.data[h_value] = 
+    #   pushfirst!(b.data[hashing(key, m(b))], key, entry))
+end
+
+"""
+    search(b::Buckets{K,T}, key::K)::Union{Nothing, Node{K,T}}
+
+# OpenIssue: 
+* Should it return entry or node?? If you return a node you could use wrappers.
+One that returns the size of the chained nodes and one get
+"""
+function search(b::Buckets{K,T}, key::K) where {K,T}
+    h_value = hashing(key, m(b))
+    node = b.data[h_value]
+
+    while !isa(node, Nothing)
+        if isequal(node, key)
+            return node
+        else
+            node = node.next
+        end
+    end
+    return node
 end
