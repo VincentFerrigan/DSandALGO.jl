@@ -7,10 +7,11 @@ Date: 2022-10-18
 Notes:
 
 # TODO: 
-* add get function
-* test Buckets in accordance with hash.pdf
 * add Linear probing
-* Benchmarks
+* test linear probing
+* Do Benchmarks in acc with hash.pdf 
+    note: Created a draft bench jlfile in folder ../benchmarks/. Continue there
+    purpose: Can be performed in repl instead of notebook
 * IMRaD
 
 Contains:

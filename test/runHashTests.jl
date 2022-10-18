@@ -12,7 +12,8 @@ using .SearchingAlgo
 using .MyHash
 
 # TODO:
-# * test buckets in acc with hash.pdf
+# * test buckets in acc with hash.pdf - done
+# * test linear probing in acc with hash.pdf - have to create them first
 
 fname = "test/input/postnummer.csv"
 v_stringkey = Vector{Union{ZipNode{String}, Nothing}}(nothing, 9675)

@@ -32,7 +32,7 @@ end
 
 function linear_search(
     vector::Vector{T}, 
-    key::T; 
+    key; 
     first = 1, 
     last = size(vector)[1]
     ) where {T}
@@ -47,7 +47,7 @@ end
     
 function binary_search(
     vector::Vector{T}, 
-    value::T; 
+    value; 
     left = 1, 
     right = size(vector)[1]
     ) where {T} 
