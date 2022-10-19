@@ -63,16 +63,19 @@ end
 # or update .mod and .data with new vector 
 function resize!(
     lpht::LinearProbHashTable{K,T},
-    capacity) where {K,T}
+    capacity,
+    ktype::DataType,
+    ttype::DataType
+    ) where {K,T}
 
-    newlpht = LinearProbHashTable{K,T}(capacity)
-    # newlpht = LinearProbHashTable{typeof(lpht.data[1].....#(capacity)
-    for i = 1:m(lpht)
-        (!isa(lpht[i], Nothing)
-          && insert!(newlpht, lpht[i].key, lpht[i].entry))
+    tempHT = LinearProbHashTable{ktype,ttype}(capacity)
+    for datum ∈ lpht.data
+        (!isa(datum, Nothing) 
+          && insert!(tempHT, datum.key, datum.entry))
     end
 
-    return newlpht
+    lpht.data = tempHT.data
+    lpht.mod = tempHT.mod
 end
 
 """
@@ -113,9 +116,8 @@ function insert!(
     entry::T
     ) where {K,T}
 
-    # somethings wrong with the logic here.
-    if lpht.n >= ÷(m(lpht), 2) 
-        resize!(lpht, *(m(lpht), 2))
+    if lpht.n > ÷(m(lpht), 2) # load factor α
+        resize!(lpht, *(m(lpht), 2), typeof(key), typeof(entry))
     end
 
     i = hashing(key, m(lpht))

@@ -107,18 +107,19 @@ println()
     bandis = 12431
     gotbandis = get(h_table, bandis)
     @test contains(gotbandis.name, "BANDHAGEN")
-    println("The population of ", rstrip(gotbandis.name), " is ", gotbandis.population)
+    # println("The population of ", rstrip(gotbandis.name), " is ", gotbandis.population)
     α = //(getfield(h_table, :mod), length(v_intkey))
     postnummer = 12431
     collisions = MyHash.getchainsize(h_table, postnummer)
-    println("With a loadfactor of α ", α, " zipcode ", postnummer, " got ", collisions, " collisions")
+    # println("With a loadfactor of α ", α, " zipcode ", postnummer, " got ", collisions, " collisions")
 end
 
 # Här är du. Testa först med en alpha  < 0.5
 # sänk den sen så att du testar resize
 @testset "LinearProbHashTable get and insert!" begin
-    m = 30000
+    m = 1000
     h_table = LinearProbHashTable{Int64, ZipNode{Int64}}(m)
+    # println("mod: ", h_table.mod, " n: ", h_table.n)
 
     # zipcode = v_intkey[100]
     # key = zipcode.code
@@ -139,19 +140,20 @@ end
     bandis = 12431
     gotbandis = get(h_table, bandis)
     @test contains(gotbandis.name, "BANDHAGEN")
-    println("The population of ", rstrip(gotbandis.name), " is ", gotbandis.population)
-
+    # println("The population of ", rstrip(gotbandis.name), " is ", gotbandis.population)
+    # println("mod: ", h_table.mod, " n: ", h_table.n)
 end
-# testprints
-println()
-println("TESTPRINTS")
-println(v_intkey[1])
-println(v_stringkey[1])
-println(v_directaddressing[12050])
 
-# Length
-println()
-println("LENGTHS")
-println(length(v_stringkey))
-println(length(v_intkey))
-println(length(v_directaddressing))
+# # testprints
+# println()
+# println("TESTPRINTS")
+# println(v_intkey[1])
+# println(v_stringkey[1])
+# println(v_directaddressing[12050])
+
+# # Length
+# println()
+# println("LENGTHS")
+# println(length(v_stringkey))
+# println(length(v_intkey))
+# println(length(v_directaddressing))
