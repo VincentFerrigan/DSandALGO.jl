@@ -114,6 +114,34 @@ println()
     println("With a loadfactor of α ", α, " zipcode ", postnummer, " got ", collisions, " collisions")
 end
 
+# Här är du. Testa först med en alpha  < 0.5
+# sänk den sen så att du testar resize
+@testset "LinearProbHashTable get and insert!" begin
+    m = 30000
+    h_table = LinearProbHashTable{Int64, ZipNode{Int64}}(m)
+
+    # zipcode = v_intkey[100]
+    # key = zipcode.code
+    # testnode = Datum{Int64, ZipNode{Int64}}(key, zipcode)
+    # insert!(h_table, key, zipcode)
+    # got = get(h_table, key)
+    # @test isequal(got, key)
+
+    for node ∈ v_intkey # alternativt läser in på nytt
+        insert!(h_table, node.code, node)
+    end
+
+    zipcode = v_intkey[100]
+    key = zipcode.code
+    got = get(h_table, key)
+    @test isequal(got, key)
+    @test got.population == zipcode.population
+    bandis = 12431
+    gotbandis = get(h_table, bandis)
+    @test contains(gotbandis.name, "BANDHAGEN")
+    println("The population of ", rstrip(gotbandis.name), " is ", gotbandis.population)
+
+end
 # testprints
 println()
 println("TESTPRINTS")

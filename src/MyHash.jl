@@ -46,8 +46,8 @@ import Base: pushfirst!, insert!, get
 include("MyHash_types.jl")
 include("MyHash_utils.jl")
 
-export Buckets # Constructors
-export Node # Node constructor (for unit testing)
+export Buckets, LinearProbHashTable # Constructors
+export Node, Datum # Node constructor (for unit testing)
 export insert!, get # base overload method
 
 end # module

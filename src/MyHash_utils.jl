@@ -4,16 +4,24 @@
 ## Base overload utils
 isempty(node::Union{Nothing, Node{K,T}}) where {K,T} = begin
     isa(node, Nothing) ? true : false end
+isempty(datum::Union{Nothing, Datum{K,T}}) where {K,T} = begin
+    isa(datum, Nothing) ? true : false end
 
 isequal(a::Node{K,T}, b::Node{K,T}) where {K,T} = a.key == b.key
 isequal(a::Node{K,T}, key::K) where {K,T} = a.key == key
 isequal(key::K, b::Node{K,T}) where {K,T} = key == b.key
 
+isequal(a::Datum{K,T}, b::Datum{K,T}) where {K,T} = a.key == b.key
+isequal(a::Datum{K,T}, key::K) where {K,T} = a.key == key
+isequal(key::K, b::Datum{K,T}) where {K,T} = key == b.key
+
 size(node::Union{Nothing, Node{K,T}}) where {K,T} = begin
     isa(node, Nothing) ? 0 : node.size end
 
 ## Short utils and wrappers
-m = (b::Buckets) -> b.mod
+m(b::Buckets) = b.mod
+m(lpht::LinearProbHashTable) = lpht.mod
+
 hashing = (key, m) -> hashingByDivision(key, m)
 getchainsize = (b, key) -> size(b.data[hashing(key, m(b))])
 
@@ -25,6 +33,11 @@ Wrapper
 get(b::Buckets{K,T}, key::K) where {K, T} = begin
     node = search(b, key)
     return isa(node, Nothing) ? nothing : return node.entry
+end
+
+get(lpht::LinearProbHashTable{K,T}, key::K) where {K, T} = begin
+    datum = search(lpht, key)
+    return isa(datum, Nothing) ? nothing : return datum.entry
 end
 
 ## Base overload methods
@@ -44,6 +57,24 @@ function pushfirst!(
 end
 
 ## functions and methods
+
+# How to resize? 
+# Should it return a new table 
+# or update .mod and .data with new vector 
+function resize!(
+    lpht::LinearProbHashTable{K,T},
+    capacity) where {K,T}
+
+    newlpht = LinearProbHashTable{K,T}(capacity)
+    # newlpht = LinearProbHashTable{typeof(lpht.data[1].....#(capacity)
+    for i = 1:m(lpht)
+        (!isa(lpht[i], Nothing)
+          && insert!(newlpht, lpht[i].key, lpht[i].entry))
+    end
+
+    return newlpht
+end
+
 """
     hashingByDivision(key::T, m) -> mod1(key, m)
 Taking m to be a prime not too close to a power of 2 is recommended
@@ -68,8 +99,36 @@ function insert!(
 
     h_value = hashing(key, m(b))
     b.data[h_value] = pushfirst!(b.data[h_value], key, entry)
-    # (b.data[h_value] = 
-    #   pushfirst!(b.data[hashing(key, m(b))], key, entry))
+end
+
+"""
+    insert!(lpht::LinearProbHashTable{K,T}, key::K, entry::T)::Datum{K,T}
+
+is it inserting properly? Test
+Adds an entry without checking for duplicates
+"""
+function insert!(
+    lpht::LinearProbHashTable{K,T}, 
+    key::K,
+    entry::T
+    ) where {K,T}
+
+    # somethings wrong with the logic here.
+    if lpht.n >= ÷(m(lpht), 2) 
+        resize!(lpht, *(m(lpht), 2))
+    end
+
+    i = hashing(key, m(lpht))
+    while !isa(lpht.data[i], Nothing)
+        if isequal(lpht.data[i], key)
+            lpht.data[i].entry = entry
+        end
+        # (isequal(lpht.data[i], key)
+        #   && (lpht.data[i].entry = entry))
+        i += 1
+    end
+    lpht.data[i] = Datum(key, entry)
+    lpht.n += 1
 end
 
 """
@@ -91,4 +150,21 @@ function search(b::Buckets{K,T}, key::K) where {K,T}
         end
     end
     return node
+end
+
+function search(
+    lpht::LinearProbHashTable{K,T}, 
+    key::K
+    ) where {K, T}
+
+    i = hashing(key, m(lpht))
+    while !isa(lpht.data[i], Nothing)
+        if isequal(lpht.data[i], key) 
+            return lpht.data[i]
+        else
+            i += 1
+        end
+    end
+
+    return nothing
 end
