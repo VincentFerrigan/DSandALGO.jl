@@ -2,6 +2,7 @@
 # Types for MyHash module in MyHash.jl
 
 abstract type HashTable{K,T} end
+abstract type LinearProbHashTable{K,T} <: HashTable{K,T} end
 
 mutable struct Node{K,T}
     key::K
@@ -25,12 +26,24 @@ mutable struct Buckets{K,T} <: HashTable{K,T}
           m))
 end
 
-mutable struct LinearProbHashTable{K,T} <: HashTable{K,T}
+mutable struct DynamicLinearProbHT{K,T} <: LinearProbHashTable{K,T}
     data::Vector{Union{Nothing, Datum{K,T}}}
     mod
     n # amt of entries
 
-    (LinearProbHashTable{K,T}(m::Int) where {K,T} = 
+    (DynamicLinearProbHT{K,T}(m::Int) where {K,T} = 
+      new{K,T}(
+          Vector{Union{Nothing, Datum{K,T}}}(nothing, m),
+          m, 
+          0))
+end
+
+mutable struct StaticLinearProbHT{K,T} <: LinearProbHashTable{K,T}
+    data::Vector{Union{Nothing, Datum{K,T}}}
+    mod
+    n # amt of entries
+
+    (StaticLinearProbHT{K,T}(m::Int) where {K,T} = 
       new{K,T}(
           Vector{Union{Nothing, Datum{K,T}}}(nothing, m),
           m, 

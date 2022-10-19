@@ -7,17 +7,21 @@ Date: 2022-10-18
 Notes:
 
 # TODO: 
-* add Linear probing
-* test linear probing
 * Do Benchmarks in acc with hash.pdf 
     note: Created a draft bench jlfile in folder ../benchmarks/. Continue there
     purpose: Can be performed in repl instead of notebook
+* test the search attemts. Compare the two collision resolution types
+* Do linearprobing without resizing!!!!!! It has to give warning instead of resizeing I guess
+ISSUE: Vad händer ifall den kommer till sista index? Börjar den då om?
 * IMRaD
 
 Contains:
 # Types
-* Buckets
+* Buckets :> HashTable
+* DynamicLinearProbHT :> LinearProbHashTable :> HashTable
+* StaticLinearProbHT :> LinearProbHashTable :> HashTable # TODO. Its the one without resize
 * Node
+* Datum
 
 # Utils
 ## Base overload utils
@@ -26,16 +30,22 @@ Contains:
 * size
 
 ## Short utils and wrappers
-* m
-* hasing - wrapper
+* m - two methods
+* hashing - wrapper
+* hashingByDivision
 
 ## Base overload methods
+* get - two methods
 * pushfirst!
-* get
-* insert!
+* insert! - two methods
 
 ## functions and methods
-* hashingByDivision
+* resize!
+* search - two methods
+
+## For testing and data
+* searchattempts - two methods
+* getcollisiondata
 """
 
 module MyHash
@@ -46,7 +56,7 @@ import Base: pushfirst!, insert!, get
 include("MyHash_types.jl")
 include("MyHash_utils.jl")
 
-export Buckets, LinearProbHashTable # Constructors
+export Buckets, DynamicLinearProbHT, StaticLinearProbHT # Constructors
 export Node, Datum # Node constructor (for unit testing)
 export insert!, get # base overload method
 

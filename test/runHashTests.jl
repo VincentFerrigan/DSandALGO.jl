@@ -13,7 +13,7 @@ using .MyHash
 
 # TODO:
 # * test buckets in acc with hash.pdf - done
-# * test linear probing in acc with hash.pdf - have to create them first
+# * test linear probing in acc with hash.pdf - have to check searchattemts
 
 fname = "test/input/postnummer.csv"
 v_stringkey = Vector{Union{ZipNode{String}, Nothing}}(nothing, 9675)
@@ -106,19 +106,22 @@ println()
     @test got.population == zipcode.population
     bandis = 12431
     gotbandis = get(h_table, bandis)
+    gotbandis2, getbandisattemts = MyHash.searchattempts(h_table, bandis)
     @test contains(gotbandis.name, "BANDHAGEN")
     # println("The population of ", rstrip(gotbandis.name), " is ", gotbandis.population)
     α = //(getfield(h_table, :mod), length(v_intkey))
     postnummer = 12431
-    collisions = MyHash.getchainsize(h_table, postnummer)
-    # println("With a loadfactor of α ", α, " zipcode ", postnummer, " got ", collisions, " collisions")
+    hashvalue, collisions = MyHash.getcollisiondata(h_table, postnummer)
+    println("With a loadfactor of α ", α, " zipcode ", postnummer, " is mapped to a hashvalue of ", hashvalue, " that got ", collisions, " collisions")
+    @test isequal(gotbandis, gotbandis2)
+    println("It took ", getbandisattemts, " attempts to get ", gotbandis, "which should be the same as ", gotbandis2, )
 end
 
 # Här är du. Testa först med en alpha  < 0.5
 # sänk den sen så att du testar resize
-@testset "LinearProbHashTable get and insert!" begin
+@testset "DynamicLinearProbHT get and insert!" begin
     m = 1000
-    h_table = LinearProbHashTable{Int64, ZipNode{Int64}}(m)
+    h_table = DynamicLinearProbHT{Int64, ZipNode{Int64}}(m)
     # println("mod: ", h_table.mod, " n: ", h_table.n)
 
     # zipcode = v_intkey[100]
@@ -139,7 +142,41 @@ end
     @test got.population == zipcode.population
     bandis = 12431
     gotbandis = get(h_table, bandis)
+    gotbandis2, getbandisattemts = MyHash.searchattempts(h_table, bandis)
     @test contains(gotbandis.name, "BANDHAGEN")
+    @test isequal(gotbandis, gotbandis2)
+    println("It took ", getbandisattemts, " attempts to get ", gotbandis, "which should be the same as ", gotbandis2, )
+    # println("The population of ", rstrip(gotbandis.name), " is ", gotbandis.population)
+    # println("mod: ", h_table.mod, " n: ", h_table.n)
+end
+
+@testset "StaticLinearProbHT get and insert!" begin
+    m = 10000
+    h_table = StaticLinearProbHT{Int64, ZipNode{Int64}}(m)
+    # println("mod: ", h_table.mod, " n: ", h_table.n)
+
+    # zipcode = v_intkey[100]
+    # key = zipcode.code
+    # testnode = Datum{Int64, ZipNode{Int64}}(key, zipcode)
+    # insert!(h_table, key, zipcode)
+    # got = get(h_table, key)
+    # @test isequal(got, key)
+
+    for node ∈ v_intkey # alternativt läser in på nytt
+        insert!(h_table, node.code, node)
+    end
+
+    zipcode = v_intkey[100]
+    key = zipcode.code
+    got = get(h_table, key)
+    @test isequal(got, key)
+    @test got.population == zipcode.population
+    bandis = 12431
+    gotbandis = get(h_table, bandis)
+    gotbandis2, getbandisattemts = MyHash.searchattempts(h_table, bandis)
+    @test contains(gotbandis.name, "BANDHAGEN")
+    @test isequal(gotbandis, gotbandis2)
+    println("It took ", getbandisattemts, " attempts to get ", gotbandis, "which should be the same as ", gotbandis2, )
     # println("The population of ", rstrip(gotbandis.name), " is ", gotbandis.population)
     # println("mod: ", h_table.mod, " n: ", h_table.n)
 end
