@@ -3,52 +3,9 @@
 using Test
 using Revise
 
-include("../src/Zip.jl")
-include("../src/SearchingAlgo.jl")
-include("../src/MyHash.jl")
+include("../benchmarks/BenchHash.jl")
 
-using .Zip
-using .SearchingAlgo
-using .MyHash
-
-# TODO:
-# * test buckets in acc with hash.pdf - done
-# * test linear probing in acc with hash.pdf - have to check searchattemts
-
-fname = "test/input/postnummer.csv"
-v_stringkey = Vector{Union{ZipNode{String}, Nothing}}(nothing, 9675)
-v_intkey = Vector{Union{ZipNode{Int64}, Nothing}}(nothing, 9675)
-v_directaddressing = Vector{Union{ZipNode{Int64}, Nothing}}(nothing, 99999)
-
-
-@testset "read first lines from file" begin
-    open(fname, "r") do fh
-        i = 1
-        for line in eachline(fh)
-            row = split(line, ",")
-            v_stringkey[i] = ZipNode{String}(row[1], row[2], row[3])
-            i += 1
-        end
-    end
-
-    open(fname, "r") do fh
-        j = 1
-        for line ∈ eachline(fh)
-            row = split(line, ",")
-            code = tryparse(Int, replace(row[1], " " => ""))
-            pop = tryparse(Int, row[3])
-            isa(code, Nothing) && throw(ArgumentError("$code is not a valid zip code"))
-            isa(pop, Nothing) && throw(ArgumentError("$pop is not a valid population number"))
-            v_intkey[j] = ZipNode{Int64}(code, row[2], pop)
-            j += 1
-        end
-    end
-
-    # direct addressing
-    for node in v_intkey
-        v_directaddressing[node.code] = node
-    end
-
+@testset "Testing isequal and isless" begin
     # Comparing values (<, >, isequal, <=, >=)
     @test isequal(v_intkey[2], 11120)
     @test isequal(v_intkey[1], 11115)
@@ -68,7 +25,11 @@ v_directaddressing = Vector{Union{ZipNode{Int64}, Nothing}}(nothing, 99999)
     @test v_stringkey[2] >= v_stringkey[1]
     @test v_stringkey[1] <= v_stringkey[2]
     @test !(v_stringkey[1] > v_stringkey[2])
+end
 
+println()
+
+@testset "LinearSearch, BinarySearch, DirectAdressing" begin
     # Linear search
     il = SearchingAlgo.linear_search(v_intkey, 12431)
     @test contains(v_intkey[il].name, "BANDHAGEN")
@@ -112,13 +73,13 @@ println()
     α = //(getfield(h_table, :mod), length(v_intkey))
     postnummer = 12431
     hashvalue, collisions = MyHash.getcollisiondata(h_table, postnummer)
-    println("With a loadfactor of α ", α, " zipcode ", postnummer, " is mapped to a hashvalue of ", hashvalue, " that got ", collisions, " collisions")
+    # println("With a loadfactor of α ", α, " zipcode ", postnummer, " is mapped to a hashvalue of ", hashvalue, " that got ", collisions, " collisions")
     @test isequal(gotbandis, gotbandis2)
-    println("It took ", getbandisattemts, " attempts to get ", gotbandis, "which should be the same as ", gotbandis2, )
+    # println("It took ", getbandisattemts, " attempts to get ", gotbandis, "which should be the same as ", gotbandis2, )
 end
 
-# Här är du. Testa först med en alpha  < 0.5
-# sänk den sen så att du testar resize
+println()
+
 @testset "DynamicLinearProbHT get and insert!" begin
     m = 1000
     h_table = DynamicLinearProbHT{Int64, ZipNode{Int64}}(m)
@@ -145,10 +106,12 @@ end
     gotbandis2, getbandisattemts = MyHash.searchattempts(h_table, bandis)
     @test contains(gotbandis.name, "BANDHAGEN")
     @test isequal(gotbandis, gotbandis2)
-    println("It took ", getbandisattemts, " attempts to get ", gotbandis, "which should be the same as ", gotbandis2, )
+    # println("It took ", getbandisattemts, " attempts to get ", gotbandis, "which should be the same as ", gotbandis2, )
     # println("The population of ", rstrip(gotbandis.name), " is ", gotbandis.population)
     # println("mod: ", h_table.mod, " n: ", h_table.n)
 end
+
+println()
 
 @testset "StaticLinearProbHT get and insert!" begin
     m = 10000
@@ -176,10 +139,59 @@ end
     gotbandis2, getbandisattemts = MyHash.searchattempts(h_table, bandis)
     @test contains(gotbandis.name, "BANDHAGEN")
     @test isequal(gotbandis, gotbandis2)
-    println("It took ", getbandisattemts, " attempts to get ", gotbandis, "which should be the same as ", gotbandis2, )
+    # println("It took ", getbandisattemts, " attempts to get ", gotbandis, "which should be the same as ", gotbandis2, )
     # println("The population of ", rstrip(gotbandis.name), " is ", gotbandis.population)
     # println("mod: ", h_table.mod, " n: ", h_table.n)
 end
+
+@testset "Attempts data" begin
+    m = 10000
+    buckets, static, dynamic = attempts(m)
+    @test sum(buckets) == length(v_intkey)
+    @test sum(static) == length(v_intkey)
+    if length(v_intkey) < m 
+        @test sum(dynamic) == length(v_intkey)
+    else
+        @test sum(dynamic) == 0
+    end
+    
+    for i = 1:10
+        println("buckets[", i, "]: ", buckets[i])
+        println("static[", i, "]: ", static[i])
+        println("dynamic[", i, "]: ", dynamic[i])
+        println()
+    end
+end
+
+@testset "Collision data" begin
+    m = 10000
+    buckets = collisions(m)
+
+    @test sum(buckets[2]) == length(v_intkey)
+    
+    for i = 1:10
+        println("buckets[", i, "]: ", buckets[2][i])
+        println()
+    end
+end
+
+@testset "compare attempt with collisiondata" begin
+    m = 10000
+    buckets = hashtables(m)[1]
+    b_collisions = collisiondata(buckets)[2]
+    b_attempts = attemptdata(buckets)
+    
+    for i = 1:10
+        println("[", i, "] collisions: ", b_collisions[i], " attempts: ", b_attempts[i])
+    end
+end
+
+println()
+
+@testset "Collisions data" begin
+end
+
+println()
 
 # # testprints
 # println()

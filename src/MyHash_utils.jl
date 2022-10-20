@@ -50,20 +50,12 @@ get(lpht::LinearProbHashTable{K,T}, key::K) where {K, T} = begin
     return isa(datum, Nothing) ? nothing : datum.entry
 end
 
-
 function pushfirst!(
     node::Union{Nothing, Node{K,T}}, 
     key::K, 
     entry::T) where {K,T}
 
-    if isa(node, Nothing)
-        return Node(key, entry, nothing, 1)
-    else
-        return Node(key, entry, node, (node.size + 1))
-    end
-    # (return isa(node, Nothing)
-    # ? node(key, entry, nothing, 1) 
-    # : Node(key, entry, node, size(node) + 1))
+    return Node(key, entry, node, (size(node) + 1))
 end
 
 """ 
@@ -81,64 +73,38 @@ function insert!(
     b.data[h_value] = pushfirst!(b.data[h_value], key, entry)
 end
 
-# Create a insert! for StaticLinearProbHT <: LinearProbHashTable
 """
-    insert!(lpht::StaticLinearProbHT{K,T}, key::K, entry::T)::Datum{K,T}
-
-Adds an entry. Duplicates are overwritten.
-ISSUE: Vad händer ifall den kommer till sista index? Börjar den då om?
-"""
-function insert!(
-    lpht::StaticLinearProbHT{K,T}, 
-    key::K,
-    entry::T
-    ) where {K,T}
-
-    # has to always leave one slot "empty" (i.e. nothing)
-    lpht.n == (m(lpht) - 1) && throw(ArgumentError("Full hashtable"))
-
-    i = hashing(key, m(lpht))
-    while !isa(lpht.data[i], Nothing)
-        if isequal(lpht.data[i], key)
-            lpht.data[i].entry = entry
-        end
-        # (isequal(lpht.data[i], key)
-        #   && (lpht.data[i].entry = entry))
-        i += 1
-    end
-    lpht.data[i] = Datum(key, entry)
-    lpht.n += 1
-end
-
-"""
-    insert!(lpht::DynamicLinearProbHT{K,T}, key::K, entry::T)::Datum{K,T}
+    insert!(lpht::LinearProbHashTable{K,T}, key::K, entry::T)::Datum{K,T}
 
 Adds an entry. Duplicates are overwritten.
 """
 function insert!(
-    lpht::DynamicLinearProbHT{K,T}, 
+    lpht::LinearProbHashTable{K,T}, 
     key::K,
     entry::T
     ) where {K,T}
 
-    if lpht.n > ÷(m(lpht), 2) # load factor α
+    if isa(lpht, DynamicLinearProbHT) && lpht.n > ÷(m(lpht), 2) # load factor α > 1//2
         resize!(lpht, *(m(lpht), 2), typeof(key), typeof(entry))
+    # elseif isa(lpht, StaticLinearProbHT) && lpht.n >= (m(lpht) - 1) # load factor close to 1
+    elseif isa(lpht, StaticLinearProbHT) && m(lpht) < lpht.n # load factor close to 1
+        # has to at lesat leave one slot "empty" (i.e. a nothing)
+        throw(ArgumentError(
+            "Only one slot left for the static linear probing hashtable"))
     end
 
-    i = hashing(key, m(lpht))
-    while !isa(lpht.data[i], Nothing)
-        if isequal(lpht.data[i], key)
-            lpht.data[i].entry = entry
+    pos = hashing(key, m(lpht))
+    while !isa(lpht.data[pos], Nothing)
+        if isequal(lpht.data[pos], key)
+            lpht.data[pos].entry = entry
         end
-        # (isequal(lpht.data[i], key)
-        #   && (lpht.data[i].entry = entry))
-        i += 1
+        pos = mod1((pos + 1), m(lpht)) # or mod1(pos+1,length(lpht.data))
     end
-    lpht.data[i] = Datum(key, entry)
+    lpht.data[pos] = Datum(key, entry)
     lpht.n += 1
 end
-## functions and methods
 
+## functions and methods
 function resize!(
     lpht::DynamicLinearProbHT{K,T},
     capacity,
@@ -156,7 +122,6 @@ function resize!(
     lpht.mod = tempHT.mod
 end
 
-
 """
     search(b::Buckets{K,T}, key::K)::Union{Nothing, Node{K,T}}
 
@@ -168,7 +133,7 @@ function search(b::Buckets{K,T}, key::K) where {K,T}
     h_value = hashing(key, m(b))
     node = b.data[h_value]
 
-    attempts = 0
+    attempts = 0 # for Benchmarking
     while !isa(node, Nothing)
         attempts += 1
         if isequal(node, key)
@@ -185,22 +150,21 @@ function search(
     key::K
     ) where {K, T}
 
-    attempts = 0
-    i = hashing(key, m(lpht))
-    while !isa(lpht.data[i], Nothing)
+    attempts = 0 # for Benchmarking
+    pos = hashing(key, m(lpht))
+    while !isa(lpht.data[pos], Nothing)
         attempts += 1
-        if isequal(lpht.data[i], key) 
-            return lpht.data[i], attempts
+        if isequal(lpht.data[pos], key) 
+            return lpht.data[pos], attempts
         else
-            i += 1
+            pos = mod1((pos + 1), m(lpht)) # or mod1(pos+1,length(lpht.data))
         end
     end
-    @assert i == hashing(key, m(lpht)) + attempts
-
+    @assert pos == mod!(hashing(key, m(lpht)) + attempts, length(lpht.data))
     return nothing, attempts
 end
 
-## For testing and data
+## For testing and benchmark data
 searchattempts(b::Buckets{K,T}, key::K) where {K, T} = begin
     node, attempts = search(b, key)
     return isa(node, Nothing) ? (nothing, attempts) : (node.entry, attempts)
@@ -210,10 +174,14 @@ searchattempts(lpht::LinearProbHashTable{K,T}, key::K) where {K, T} = begin
     datum, attempts = search(lpht, key)
     return isa(datum, Nothing) ? (nothing, attempts) : (datum.entry, attempts)
 end
+
 """
     getcollisiondata(b, key)
 
 Returns tuple; hash value and the bucket size (chain size i.e. nbr of collisions)
+If size one, no collision
+if size two, 1 collision...
+if size n, n-1 collisions
 """
 function getcollisiondata(b, key)
     hashvalue = hashing(key, m(b))

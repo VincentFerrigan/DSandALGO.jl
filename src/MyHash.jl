@@ -59,5 +59,6 @@ include("MyHash_utils.jl")
 export Buckets, DynamicLinearProbHT, StaticLinearProbHT # Constructors
 export Node, Datum # Node constructor (for unit testing)
 export insert!, get # base overload method
+export searchattempts, getcollisiondata, hashing # for testing and benchmark data
 
 end # module
