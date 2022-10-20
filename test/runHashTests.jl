@@ -51,7 +51,7 @@ println()
 
 @testset "Buckets get and insert!" begin
     m = 10000
-    h_table = Buckets{Int64, ZipNode{Int64}}(m)
+    h_table = ClosedAddressingHT{Int64, ZipNode{Int64}}(m)
 
     # testnode = Node{Int64, ZipNode{Int64}}(key, zipcode, nothing, 1)
     # insert!(h_table, key, zipcode)
@@ -82,7 +82,7 @@ println()
 
 @testset "DynamicLinearProbHT get and insert!" begin
     m = 1000
-    h_table = DynamicLinearProbHT{Int64, ZipNode{Int64}}(m)
+    h_table = DynamicOpenAddressingHT{Int64, ZipNode{Int64}}(m)
     # println("mod: ", h_table.mod, " n: ", h_table.n)
 
     # zipcode = v_intkey[100]
@@ -115,7 +115,7 @@ println()
 
 @testset "StaticLinearProbHT get and insert!" begin
     m = 10000
-    h_table = StaticLinearProbHT{Int64, ZipNode{Int64}}(m)
+    h_table = StaticOpenAddressingHT{Int64, ZipNode{Int64}}(m)
     # println("mod: ", h_table.mod, " n: ", h_table.n)
 
     # zipcode = v_intkey[100]
@@ -146,8 +146,8 @@ end
 
 @testset "Attempts data" begin
     m = 10000
-    buckets, static, dynamic = attempts(m)
-    @test sum(buckets) == length(v_intkey)
+    ca, static, dynamic = attempts(m)
+    @test sum(ca) == length(v_intkey)
     @test sum(static) == length(v_intkey)
     if length(v_intkey) < m 
         @test sum(dynamic) == length(v_intkey)
@@ -156,7 +156,7 @@ end
     end
     
     for i = 1:10
-        println("buckets[", i, "]: ", buckets[i])
+        println("buckets[", i, "]: ", ca[i])
         println("static[", i, "]: ", static[i])
         println("dynamic[", i, "]: ", dynamic[i])
         println()
@@ -165,24 +165,24 @@ end
 
 @testset "Collision data" begin
     m = 10000
-    buckets = collisions(m)
+    ca_coll = collisions(m)
 
-    @test sum(buckets[2]) == length(v_intkey)
+    @test sum(ca_coll[2]) == length(v_intkey)
     
     for i = 1:10
-        println("buckets[", i, "]: ", buckets[2][i])
+        println("buckets[", i, "]: ", ca_coll[2][i])
         println()
     end
 end
 
 @testset "compare attempt with collisiondata" begin
     m = 10000
-    buckets = hashtables(m)[1]
-    b_collisions = collisiondata(buckets)[2]
-    b_attempts = attemptdata(buckets)
+    caht = hashtables(m)[1]
+    ca_collisions = collisiondata(caht)[2]
+    ca_attempts = attemptdata(caht)
     
     for i = 1:10
-        println("[", i, "] collisions: ", b_collisions[i], " attempts: ", b_attempts[i])
+        println("[", i, "] collisions: ", ca_collisions[i], " attempts: ", ca_attempts[i])
     end
 end
 
