@@ -19,8 +19,8 @@ size(node::Union{Nothing, Node{K,T}}) where {K,T} = begin
     isa(node, Nothing) ? 0 : node.size end
 
 ## Short utils and wrappers
-m(b::Buckets) = b.mod
-m(lpht::LinearProbHashTable) = lpht.mod
+m(caht::ClosedAddressingHT) = caht.mod
+m(oaht::OpenAddressingHT) = oaht.mod
 
 hashing = (key, m) -> hashingByDivision(key, m)
 
@@ -37,16 +37,16 @@ end
 
 ## Base overload methods
 """
-    get(b::Buckets{K,T}, key::K)::Union{Nothing, T}
+    get(caht::ClosedAddressingHT{K,T}, key::K)::Union{Nothing, T}
 Wrapper
 """
-get(b::Buckets{K,T}, key::K) where {K, T} = begin
-    node = search(b, key)[1]
+get(caht::ClosedAddressingHT{K,T}, key::K) where {K, T} = begin
+    node = search(caht, key)[1]
     return isa(node, Nothing) ? nothing : node.entry
 end
 
-get(lpht::LinearProbHashTable{K,T}, key::K) where {K, T} = begin
-    datum = search(lpht, key)[1]
+get(oaht::OpenAddressingHT{K,T}, key::K) where {K, T} = begin
+    datum = search(oaht, key)[1]
     return isa(datum, Nothing) ? nothing : datum.entry
 end
 
@@ -59,79 +59,101 @@ function pushfirst!(
 end
 
 """ 
-    insert!(b::Buckets{K,T}, key::K, entry::T)::Node{K,T}
+    insert!(caht::ClosedAddressingHT{K,T}, key::K, entry::T)::Node{K,T}
 
 Adds an entry without checking for duplicates
 """
 function insert!(
-    b::Buckets{K,T},
+    caht::ClosedAddressingHT{K,T},
     key::K,
     entry::T
     ) where {K,T}
 
-    h_value = hashing(key, m(b))
-    b.data[h_value] = pushfirst!(b.data[h_value], key, entry)
+    h_value = hashing(key, m(caht))
+    caht.data[h_value] = pushfirst!(caht.data[h_value], key, entry)
+    caht.n += 1
 end
 
 """
-    insert!(lpht::LinearProbHashTable{K,T}, key::K, entry::T)::Datum{K,T}
+    insert!(oaht::StaticOpenAddressingHT{K,T}, key::K, entry::T)::Datum{K,T}
 
 Adds an entry. Duplicates are overwritten.
 """
 function insert!(
-    lpht::LinearProbHashTable{K,T}, 
+    oaht::StaticOpenAddressingHT{K,T}, 
     key::K,
     entry::T
     ) where {K,T}
 
-    if isa(lpht, DynamicLinearProbHT) && lpht.n > ÷(m(lpht), 2) # load factor α > 1//2
-        resize!(lpht, *(m(lpht), 2), typeof(key), typeof(entry))
-    # elseif isa(lpht, StaticLinearProbHT) && lpht.n >= (m(lpht) - 1) # load factor close to 1
-    elseif isa(lpht, StaticLinearProbHT) && m(lpht) < lpht.n # load factor close to 1
-        # has to at lesat leave one slot "empty" (i.e. a nothing)
-        throw(ArgumentError(
-            "Only one slot left for the static linear probing hashtable"))
+    # load factor close to 1 - has to at least leave one slot "empty" (i.e. a nothing)
+    (m(oaht) < oaht.n && throw(ArgumentError(
+        "Only one slot left for the static linear probing hashtable")))
+
+    pos = hashing(key, m(oaht))
+    while !isa(oaht.data[pos], Nothing)
+        if isequal(oaht.data[pos], key)
+            oaht.data[pos].entry = entry
+        end
+        pos = mod1((pos + 1), m(oaht)) # or mod1(pos+1,length(oaht.data))
+    end
+    oaht.data[pos] = Datum(key, entry)
+    oaht.n += 1
+end
+
+"""
+    insert!(oaht::DynamicOpenAddressingHT{K,T}, key::K, entry::T)::Datum{K,T}
+
+Adds an entry. Duplicates are overwritten.
+"""
+function insert!(
+    oaht::DynamicOpenAddressingHT{K,T}, 
+    key::K,
+    entry::T
+    ) where {K,T}
+
+    if oaht.n > ÷(m(oaht), 2) # load factor α > 1//2
+        resize!(oaht, *(m(oaht), 2), typeof(key), typeof(entry))
     end
 
-    pos = hashing(key, m(lpht))
-    while !isa(lpht.data[pos], Nothing)
-        if isequal(lpht.data[pos], key)
-            lpht.data[pos].entry = entry
+    pos = hashing(key, m(oaht))
+    while !isa(oaht.data[pos], Nothing)
+        if isequal(oaht.data[pos], key)
+            oaht.data[pos].entry = entry
         end
-        pos = mod1((pos + 1), m(lpht)) # or mod1(pos+1,length(lpht.data))
+        pos = mod1((pos + 1), m(oaht)) # or mod1(pos+1,length(oaht.data))
     end
-    lpht.data[pos] = Datum(key, entry)
-    lpht.n += 1
+    oaht.data[pos] = Datum(key, entry)
+    oaht.n += 1
 end
 
 ## functions and methods
 function resize!(
-    lpht::DynamicLinearProbHT{K,T},
+    oaht::DynamicOpenAddressingHT{K,T},
     capacity,
     ktype::DataType,
     ttype::DataType
     ) where {K,T}
 
-    tempHT = DynamicLinearProbHT{ktype,ttype}(capacity)
-    for datum ∈ lpht.data
+    tempHT = DynamicOpenAddressingHT{ktype,ttype}(capacity)
+    for datum ∈ oaht.data
         (!isa(datum, Nothing) 
           && insert!(tempHT, datum.key, datum.entry))
     end
 
-    lpht.data = tempHT.data
-    lpht.mod = tempHT.mod
+    oaht.data = tempHT.data
+    oaht.mod = tempHT.mod
 end
 
 """
-    search(b::Buckets{K,T}, key::K)::Union{Nothing, Node{K,T}}
+    search(caht::ClosedAddressingHT{K,T}, key::K)::Union{Nothing, Node{K,T}}
 
 # OpenIssue: 
 It returns the node and amount of attempts it had to take to find the item
 
 """
-function search(b::Buckets{K,T}, key::K) where {K,T}
-    h_value = hashing(key, m(b))
-    node = b.data[h_value]
+function search(caht::ClosedAddressingHT{K,T}, key::K) where {K,T}
+    h_value = hashing(key, m(caht))
+    node = caht.data[h_value]
 
     attempts = 0 # for Benchmarking
     while !isa(node, Nothing)
@@ -146,45 +168,45 @@ function search(b::Buckets{K,T}, key::K) where {K,T}
 end
 
 function search(
-    lpht::LinearProbHashTable{K,T}, 
+    oaht::OpenAddressingHT{K,T}, 
     key::K
     ) where {K, T}
 
     attempts = 0 # for Benchmarking
-    pos = hashing(key, m(lpht))
-    while !isa(lpht.data[pos], Nothing)
+    pos = hashing(key, m(oaht))
+    while !isa(oaht.data[pos], Nothing)
         attempts += 1
-        if isequal(lpht.data[pos], key) 
-            return lpht.data[pos], attempts
+        if isequal(oaht.data[pos], key) 
+            return oaht.data[pos], attempts
         else
-            pos = mod1((pos + 1), m(lpht)) # or mod1(pos+1,length(lpht.data))
+            pos = mod1((pos + 1), m(oaht)) # or mod1(pos+1,length(oaht.data))
         end
     end
-    @assert pos == mod!(hashing(key, m(lpht)) + attempts, length(lpht.data))
+    @assert pos == mod!(hashing(key, m(oaht)) + attempts, length(oaht.data))
     return nothing, attempts
 end
 
 ## For testing and benchmark data
-searchattempts(b::Buckets{K,T}, key::K) where {K, T} = begin
-    node, attempts = search(b, key)
+searchattempts(caht::ClosedAddressingHT{K,T}, key::K) where {K, T} = begin
+    node, attempts = search(caht, key)
     return isa(node, Nothing) ? (nothing, attempts) : (node.entry, attempts)
 end
 
-searchattempts(lpht::LinearProbHashTable{K,T}, key::K) where {K, T} = begin
-    datum, attempts = search(lpht, key)
+searchattempts(oaht::OpenAddressingHT{K,T}, key::K) where {K, T} = begin
+    datum, attempts = search(oaht, key)
     return isa(datum, Nothing) ? (nothing, attempts) : (datum.entry, attempts)
 end
 
 """
-    getcollisiondata(b, key)
+    getcollisiondata(caht, key)
 
-Returns tuple; hash value and the bucket size (chain size i.e. nbr of collisions)
+Returns tuple; hash value and the length of the linked list (chain size i.e. nbr of collisions + 1)
 If size one, no collision
 if size two, 1 collision...
 if size n, n-1 collisions
 """
-function getcollisiondata(b, key)
-    hashvalue = hashing(key, m(b))
-    chainsize = size(b.data[hashvalue])
+function getcollisiondata(caht::ClosedAddressingHT, key)
+    hashvalue = hashing(key, m(caht))
+    chainsize = size(caht.data[hashvalue])
     return hashvalue, chainsize
 end

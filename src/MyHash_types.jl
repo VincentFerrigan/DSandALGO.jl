@@ -2,7 +2,7 @@
 # Types for MyHash module in MyHash.jl
 
 abstract type HashTable{K,T} end
-abstract type LinearProbHashTable{K,T} <: HashTable{K,T} end
+abstract type OpenAddressingHT{K,T} <: HashTable{K,T} end
 
 mutable struct Node{K,T}
     key::K
@@ -16,34 +16,50 @@ struct Datum{K,T}
     entry::T
 end
 
-mutable struct Buckets{K,T} <: HashTable{K,T}
+"""
+    ClosedAddressing{K,T}
+Collision resolution by chaining.
+Each slot of the vector contains a reference to a singly-linked list containing
+key-value pairs with the same hash value
+"""
+mutable struct ClosedAddressingHT{K,T} <: HashTable{K,T}
     data::Vector{Union{Nothing, Node{K,T}}}
-    mod
-
-    (Buckets{K,T}(m::Int) where {K,T} = 
-      new{K,T}(
-          Vector{Union{Nothing, Node{K,T}}}(nothing, m),
-          m))
-end
-
-mutable struct DynamicLinearProbHT{K,T} <: LinearProbHashTable{K,T}
-    data::Vector{Union{Nothing, Datum{K,T}}}
-    mod
+    mod # slot-size
     n # amt of entries
 
-    (DynamicLinearProbHT{K,T}(m::Int) where {K,T} = 
+    (ClosedAddressingHT{K,T}(m::Int) where {K,T} = 
+      new{K,T}(
+          Vector{Union{Nothing, Node{K,T}}}(nothing, m),
+          m,
+          0))
+end
+
+"""
+    DynamicOpenAddressingHT{K,T}
+Collision resolution by linear probing.
+"""
+mutable struct DynamicOpenAddressingHT{K,T} <: OpenAddressingHT{K,T}
+    data::Vector{Union{Nothing, Datum{K,T}}}
+    mod # slot-size
+    n # amt of entries
+
+    (DynamicOpenAddressingHT{K,T}(m::Int) where {K,T} = 
       new{K,T}(
           Vector{Union{Nothing, Datum{K,T}}}(nothing, m),
           m, 
           0))
 end
 
-mutable struct StaticLinearProbHT{K,T} <: LinearProbHashTable{K,T}
+"""
+    StaticOpenAddressingHT{K,T}
+Collision resolution by linear probing.
+"""
+mutable struct StaticOpenAddressingHT{K,T} <: OpenAddressingHT{K,T}
     data::Vector{Union{Nothing, Datum{K,T}}}
-    mod
+    mod # slot-size
     n # amt of entries
 
-    (StaticLinearProbHT{K,T}(m::Int) where {K,T} = 
+    (StaticOpenAddressingHT{K,T}(m::Int) where {K,T} = 
       new{K,T}(
           Vector{Union{Nothing, Datum{K,T}}}(nothing, m),
           m, 
