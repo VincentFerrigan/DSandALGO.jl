@@ -65,8 +65,8 @@ Returns a tuple containg the following @benchmark for
 - `n`: index number
 """
 function smallbench(n)
-    key_int = v_intkey[n]
-    key_string = v_stringkey[n]
+    key_int = v_intkey[n].code
+    key_string = v_stringkey[n].code
 
     # Linear search
     t_ls_int = @benchmark SearchingAlgo.linear_search(v_intkey, $key_int)
@@ -80,6 +80,36 @@ function smallbench(n)
     t_da = @benchmark v_directaddressing[$key_int]
 
     return (t_ls_int, t_ls_string, t_bs_int, t_bs_string, t_da)
+end
+
+function smallbenchable(n)
+    key_int = v_intkey[n].code
+    key_string = v_stringkey[n].code
+
+    # Linear search
+    lis = @benchmarkable SearchingAlgo.linear_search(v_intkey, $key_int)
+    lss = @benchmarkable SearchingAlgo.linear_search(v_stringkey, $key_string)
+
+    # Binary search
+    bis = @benchmarkable SearchingAlgo.binary_search(v_intkey, $key_int)
+    bss = @benchmarkable SearchingAlgo.binary_search(v_stringkey, $key_string)
+
+    # Direct addressing
+    da = @benchmarkable v_directaddressing[$key_int]
+    
+    tune!(lis)
+    tune!(lss)
+    tune!(bis)
+    tune!(bss)
+    tune!(da)
+
+    median_lis = median(run(lis))
+    median_lss = median(run(lss))
+    median_bis = median(run(bis))
+    median_bss = median(run(bss))
+    median_da = median(run(da))
+
+    return (median_lis, median_lss, median_bis, median_bss, median_da)
 end
 
 """ 
@@ -101,7 +131,7 @@ function collisions(m)
     return collisiondata(h_table)
 end
 
-function collisiondata(hashtable::Buckets)
+function collisiondata(hashtable::ClosedAddressingHT)
     colperhashvalue = fill(0, hashtable.mod)
     colperhashvalueDC = fill(0, hashtable.mod)
     nbrofkeyspercol = fill(0, 30)
@@ -125,21 +155,21 @@ function collisiondata(hashtable::Buckets)
 end
 
 function hashtables(m)
-    buckets = Buckets{Int64, ZipNode{Int64}}(m)
-    static_lpht = StaticLinearProbHT{Int64, ZipNode{Int64}}(m)
-    dynamic_lpht = DynamicLinearProbHT{Int64, ZipNode{Int64}}(m)
+    caht = ClosedAddressingHT{Int64, ZipNode{Int64}}(m)
+    static_oaht = StaticOpenAddressingHT{Int64, ZipNode{Int64}}(m)
+    dynamic_oaht = DynamicOpenAddressingHT{Int64, ZipNode{Int64}}(m)
 
     for zipnode ∈ v_intkey # alternativt läser in på nytt
-        insert!(buckets, zipnode.code, zipnode)
-        insert!(dynamic_lpht, zipnode.code, zipnode)
-        length(v_intkey) < m && insert!(static_lpht, zipnode.code, zipnode)
+        insert!(caht, zipnode.code, zipnode)
+        insert!(dynamic_oaht, zipnode.code, zipnode)
+        length(v_intkey) < m && insert!(static_oaht, zipnode.code, zipnode)
     end
-    return buckets, static_lpht, dynamic_lpht
+    return caht, static_oaht, dynamic_oaht
 end
 
 function attemptdata(hashtable)
     nbrofkeysperattempt = fill(0,10000)
-    (isa(hashtable, StaticLinearProbHT) 
+    (isa(hashtable, StaticOpenAddressingHT) 
       && length(v_intkey) >= length(hashtable.data) 
       && return nbrofkeysperattempt)
 
@@ -151,8 +181,8 @@ function attemptdata(hashtable)
 end
 
 function attempts(m)
-    buckets, static, dynamic = hashtables(m)
-    return attemptdata(buckets), attemptdata(static), attemptdata(dynamic)
+    ca, static, dynamic = hashtables(m)
+    return attemptdata(ca), attemptdata(static), attemptdata(dynamic)
 end
         
 """
