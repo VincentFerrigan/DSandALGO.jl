@@ -186,13 +186,28 @@ end
     end
 end
 
+
 println()
 
 @testset "Collisions data" begin
 end
 
-println()
+# lis, lss, bis, bss, da = smallbench(length(v_intkey))
+# mlis, mlss, mbis, mbss, mda = smallbenchable(length(v_intkey))
 
+# println("Linear Integer Search: ", median(lis))
+# println("Linear String Search: ", median(lss))
+# println("Binary Integer Search: ", median(bis))
+# println("Binary String Search: ", median(bss))
+# println("Direct Addressing Lookup: ", median(da))
+
+# println("Linear Integer Search: ", mlis)
+# println("Linear String Search: ", mlss)
+# println("Binary Integer Search: ", mbis)
+# println("Binary String Search: ", mbss)
+# println("Direct Addressing Lookup: ", mda)
+
+# println(ratio(mda, mlss))
 # # testprints
 # println()
 # println("TESTPRINTS")

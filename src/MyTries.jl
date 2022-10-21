@@ -30,14 +30,14 @@ Trie
 """
 module MyTries
 
-import Base: pushfirst!, get, isequal
+import Base: pushfirst!, get, isequal, iterate, show
 
 include("MyTries_types.jl")
 include("MyTries_utils.jl")
 
 # for export
 export Trie # constructors
-export add!, insert!, get # methods
+export add!, insert!, get, show, iterate # methods
 
 # For unittesting
 export TrieNode, WordNode # constructors

@@ -3,31 +3,28 @@
 
 isequal(a::WordNode, b::String) = isequal(a.key, b)
 isequal(a::String, b::WordNode) = isequal(a, b.key)
-    
-function get(trie::Trie, key::String)
-    println("first get")
-    get(trie.root, key, 1)
+
+iterate(node::WordNode, ::Nothing) = nothing
+function iterate(node::WordNode, state::WordNode = node)
+    state, state.next
 end
+
+show(io::IO, node::WordNode) = print(node.key)
+get(trie::Trie, key::String) = get(trie.root, key, 1)
+add!(trie::Trie, key::String) = add!(trie.root, key, 1)
 
 function get(node::Union{Nothing, TrieNode}, key::String, d)
     isa(node, Nothing) && return Nothing
-    if isequal(d, sizeof(key))
-        println("last get ") # borde TrieNode ha en nyckel?
-        return node.words
+    isless(sizeof(key), d) && return node.words
+
+    token = key[d]
+    if isdigit(token)
+        get(node.next[Int(token - '0')], key, d+1)
     else
         h_value = mapchar2int(key[d])
         if h_value == 9 d += 1 end
-        println("middle get: ", h_value)
         get(node.next[h_value], key, d+1)
     end
-end
-
-function get(trie::Trie, key::Int)
-    # do something
-end
-
-function get(node::Union{Nothing, TrieNode}, key::Int, d)
-    # do something
 end
 
 function pushfirst!(
@@ -36,26 +33,25 @@ function pushfirst!(
     return WordNode(key, node)
 end
 
-
-function add!(trie::Trie, key::String)
-    println("first add")
-    add!(trie.root, key, 1)
-end
-
 function add!(node::Union{Nothing, TrieNode}, key::String, d)
-    isa(node, Nothing) && (node = TrieNode()) #tror jag?
-    if isequal(d, sizeof(key))
-        println("last add")
+    isa(node, Nothing) && (node = TrieNode())
+    if isless(sizeof(key), d)
         node.words = pushfirst!(node.words, key)
     else
-        println("middle add: ", key[d])
         h_value = mapchar2int(key[d])
-        if h_value == 9 d += 1 end
-        node.next[h_value] = add!(node.next[h_value], key, d+1)
+        # this is just for debugging
+        (isa(h_value, Nothing) && throw(
+            ArgumentError("Key word: ", key, "includes: ", key[d])))
+        
+            if h_value == 9 d += 1 end
+        if isa(node.next[h_value], Nothing)
+            node.next[h_value] = add!(node.next[h_value], key, d+1)
+        else
+            add!(node.next[h_value], key, d+1)
+        end
     end
     return node
 end
-
 
 function mapchar2int(c::Char)
     (isequal(c, 'a') || isequal(c, 'b') || isequal(c, 'c')) && return 1
@@ -67,5 +63,14 @@ function mapchar2int(c::Char)
     (isequal(c, 't') || isequal(c, 'u') || isequal(c, 'v')) && return 7
     (isequal(c, 'x') || isequal(c, 'y') || isequal(c, 'z')) && return 8
     (isequal(c, 'å') || isequal(c, 'ä') || isequal(c, 'ö')) && return 9
-    return nothing
+    # NOTE THIS
+    println("WTF, what is this: ", c)
+    return nothing 
 end
+
+# function get(node::Union{Nothing, TrieNode}, key::Int, d)
+#     # isa(node, Nothing) && return Nothing
+#     # if isequal(÷(key, 10^d), 0) return node.words
+#     # else
+#     # end
+# end
