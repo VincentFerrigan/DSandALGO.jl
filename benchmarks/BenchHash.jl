@@ -19,7 +19,7 @@ using .SearchingAlgo
 using .MyHash
 
 # Global data
-fname = "test/input/postnummer.csv"
+fname = "benchmarks/input/postnummer.csv"
 v_stringkey = Vector{Union{ZipNode{String}, Nothing}}(nothing, 9675)
 v_intkey = Vector{Union{ZipNode{Int64}, Nothing}}(nothing, 9675)
 v_directaddressing = Vector{Union{ZipNode{Int64}, Nothing}}(nothing, 99999)
@@ -131,7 +131,7 @@ function collisions(m)
     return collisiondata(h_table)
 end
 
-function collisiondata(hashtable::ClosedAddressingHT)
+function collisiondata(hashtable::ClosedAddressHT)
     colperhashvalue = fill(0, hashtable.mod)
     colperhashvalueDC = fill(0, hashtable.mod)
     nbrofkeyspercol = fill(0, 30)
@@ -155,9 +155,9 @@ function collisiondata(hashtable::ClosedAddressingHT)
 end
 
 function hashtables(m)
-    caht = ClosedAddressingHT{Int64, ZipNode{Int64}}(m)
-    static_oaht = StaticOpenAddressingHT{Int64, ZipNode{Int64}}(m)
-    dynamic_oaht = DynamicOpenAddressingHT{Int64, ZipNode{Int64}}(m)
+    caht = ClosedAddressHT{Int64, ZipNode{Int64}}(m)
+    static_oaht = StaticOpenAddressHT{Int64, ZipNode{Int64}}(m)
+    dynamic_oaht = DynamicOpenAddressHT{Int64, ZipNode{Int64}}(m)
 
     for zipnode ∈ v_intkey # alternativt läser in på nytt
         insert!(caht, zipnode.code, zipnode)
@@ -169,7 +169,7 @@ end
 
 function attemptdata(hashtable)
     nbrofkeysperattempt = fill(0,10000)
-    (isa(hashtable, StaticOpenAddressingHT) 
+    (isa(hashtable, StaticOpenAddressHT) 
       && length(v_intkey) >= length(hashtable.data) 
       && return nbrofkeysperattempt)
 

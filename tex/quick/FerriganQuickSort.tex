@@ -247,28 +247,14 @@ end
     \label{code:qsvector} %% TODO ADD LABEL
     \end{figure}
 
-    \subsubsection*{The problem of orderliness -- how to preserve randomness}
-    On average, to sort a vector of length $n$ requires time 
-    proportional to $n\log n$ \parencite{Segeqick2011Alg4th}. 
-    However, 
-    its worst-case has a quadratic runtime. If the vector is 
-    already sorted, both in ascending or descending order, 
-    will partition with n-1 elements on one side and zero 
-    elements on the other. 
-
-    If this unbalanced partition occurs in each recursive call, 
-    The side with zero elements will have a constant time of 1 and
-    the one with n-1 elements will run in linear time.
-    Adding this all together:
-    \[ (n + (n-1) + (n-2)+ ... + 2 + 1 = \frac{n(n+1)}{2} = O(n\log n) \]
-
-    \textcite{Segeqick2011Alg4th} solution is to randomly shuffle 
-    the vector to protect against the worst case. They mention 
-    that the inventor of this algorithm, \emph{C. A. R. Hoarce},
-    proposed this approach when he presented it in 1960.
-    An alternative way is to choose a random item for 
-    partitioning. Which this paper has chosen to implement, based 
-    of the pseudo-code presented by \textcite{CormenThomasH2022ItA}.
+    Instead of always using the "last" element as pivot $v[r]$, 
+    a randomized version randomly chooses the pivot from the 
+    subvetor $v[p:r]$, where each element has an equal probability of being
+    chosen. Before partitioning, the value in the randomly picked index
+    is swaped with $v[r]$. By doing so 
+    the wrapper function \mintinline{julia}{randomized-partition!} 
+    (see \autoref{code:qsrand}) can reuse the partition procedure by calling
+    \mintinline{julia}{partition!}.
 
     \begin{figure}[h]
         \centering
@@ -304,14 +290,6 @@ end
     \label{code:qsrand} %% TODO ADD LABEL
     \end{figure}
 
-    Instead of always using the "last" element as pivot $v[r]$, 
-    a randomized version randomly chooses the pivot from the 
-    subvetor $v[p:r]$, where each element has an equal probability of being
-    chosen. Before partitioning, the value in the randomly picked index
-    is swaped with $v[r]$. By doing so 
-    the wrapper function \mintinline{julia}{randomized-partition!} 
-    (see \autoref{code:qsrand}) can reuse the partition procedure by calling
-    \mintinline{julia}{partition!}.
     The study could however not find a solution for solving this problem
     when quick sorting linked lists.
 
@@ -384,8 +362,8 @@ end
     \section*{Results}
     \label{sec:results}
     The result of the benchmark is illustrated in the figures and table below.
-    The figure \ref{fig:fig1} diagrammatically visualize the operations while the
-    data is described in table \ref{tab:growth}.
+    The figure \autoref{fig:fig1} diagrammatically visualize the operations while the
+    data is described in table \autoref{tab:growth}.
 
     \begin{figure}[h] % You can have subfigures !! If necessary 
         \centering
@@ -420,7 +398,9 @@ end
 \SI{100}{m} & \SI{10.18}{\nano\second} & \SI{4.20}{\nano\second} & \SI{16.33}{\nano\second} & \num{0.62} & \num{13.1} & \num{12.4}& \num{13.2} \\
 \bottomrule
 \end{tabular}
-    \caption{growth.........TODO xxxx} % Ratio vector:list
+    \caption{The data behind \autoref{fig:fig1} with both the ratio between
+    quick sorting vectors and list, and the growth ratio per data
+    set/structure.} % Ratio vector:list
     \label{tab:growth}
     \end{table}
 
@@ -451,6 +431,57 @@ end
 
     \section*{Discussion}
     \label{sec:discussion}
-    xxxxxx
+    \subsubsection*{The problem of orderliness -- how to preserve randomness}
+    On average, to sort a vector of length $n$ requires time 
+    proportional to $n\log n$ \parencite{Segeqick2011Alg4th}. 
+    However, 
+    its worst-case has a quadratic runtime. If the vector is 
+    already sorted, both in ascending or descending order, 
+    will partition with n-1 elements on one side and zero 
+    elements on the other. 
+
+    If this unbalanced partition occurs in each recursive call, 
+    The side with zero elements will have a constant time of 1 and
+    the one with n-1 elements will run in linear time.
+    Adding this all together:
+    \[ (n + (n-1) + (n-2)+ ... + 2 + 1 = \frac{n(n+1)}{2} = O(n\log n) \]
+
+    \textcite{Segeqick2011Alg4th} solution is to randomly shuffle 
+    the vector to protect against the worst case. They mention 
+    that the inventor of this algorithm, \emph{C. A. R. Hoarce},
+    proposed this approach when he presented it in 1960.
+    An alternative way is to choose a random item for 
+    partitioning. Which this paper has chosen to implement, based 
+    of the pseudo-code presented by \textcite{CormenThomasH2022ItA} 
+    (see \autoref{code:qsrand}).
+
+    \subsubsection*{Comparing benchmark to expected Big-O-Complexity}
+    The expected time for quick sort is that T(n) grows proportional
+    to n times the logarithm of n.
+    So the question is, what is the expected time to solve a problem of size
+    $100 m$, if it takes \SI{0.78}{\nano\second} to solve a problem of size 10 m?
+    We start by calculating the proportionality constant $k$, 
+    where $k$ is 
+\[ t_{10^7} = k \cdot n \cdot \log(n) = \SI{0.78}{\nano\second} = k \cdot 10^7 \cdot \log(10^7) \rightarrow \]
+\[ \rightarrow k = \frac{\SI{0.78}{\nano\second}}{10^7 \cdot \log 10^7} \approx 3.35\]
+    
+    The proportionality constant for quick sorting a vector of size $10m$, 
+    according to the computation based on the benchmark 
+    is roughly $3.35$. For quick sorting the same vector with a randomized pivot
+    is computed in the same manner to $1.46$, 
+    while for a list of same size is computed to $5.29$. 
+    The expected running time for quick sorting a vector of size $100 m$ 
+    can therefore be computed to be 
+    \[ k \cdot 10^8 \cdot \log 10^8 = 3.35 \cdot 10^8 \cdot \log 10^8 \approx \SI{8.9}{\nano\second} \]
+
+    The expected time when randomizing the pivot gives \SI{3.9}{\nano\second}
+    while quick sorting a list of same size is computed to give an 
+    expected time of \SI{14}{\nano\second}.
+
+    So let's compare the expected figures with our benchmark in \autoref{tab:growth}. 
+    Is \SI{8.9}{\nano\second} compared to the benchmark of \SI{10.18}{\nano\second} close enough? 
+    How about \SI{3.9}{\nano\second} compared to \SI{4.20}{\nano\second} and finally \SI{14}{\nano\second} with \SI{16.33}{\nano\second}? 
+    Well it might well be considered in the ballpark of loglinear complexity. 
+    More data would definitely give a better validation.  
 \printbibliography
 \end{document}
