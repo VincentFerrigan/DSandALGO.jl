@@ -34,6 +34,8 @@
 \usepackage{graphicx}
 \usepackage{hyperref}
 \usepackage{multirow}
+\usepackage{diagbox} % For diagonal lines in tabular
+\usepackage{booktabs}
 % \usepackage{paralist}
 
 %% Om jag vill referera till ett kod verb av något slag, som void null Int etc
@@ -391,6 +393,36 @@ end
         \caption{How the quick sort algorithm scales with growth of input data.}%% TODO: add caption
         \label{fig:fig1} %% TODO: add correct fignbr /label
     \end{figure}
+
+    \begin{table}[h]
+        \centering
+        \small
+\begin{tabular}{lrrrcrrr}
+    \toprule
+            & \multicolumn{3}{c}{Type} && \multicolumn{3}{c}{Growth Ratio}\\
+\cmidrule(lr){2-4}
+\cmidrule(lr){6-8}
+\multicolumn{1}{c}{n}& \multicolumn{1}{c}{Vector} & \multicolumn{1}{c}{Rand} & \multicolumn{1}{c}{List} & \multicolumn{1}{c}{Ratio V:L} & \multicolumn{1}{c}{Vector} & \multicolumn{1}{c}{Rand} & \multicolumn{1}{c}{List}\\
+\cmidrule(lr){1-1}
+\cmidrule(lr){2-4}
+\cmidrule(lr){5-5}
+\cmidrule(lr){6-8}
+
+\SI{10 }{m} & \SI{0.78 }{\nano\second} & \SI{0.34}{\nano\second} & \SI{1.23 }{\nano\second} & \num{0.63} & \num{1.0}  & \num{1.0} & \num{1.0}  \\
+\SI{20 }{m} & \SI{1.55 }{\nano\second} & \SI{0.68}{\nano\second} & \SI{2.46 }{\nano\second} & \num{0.63} & \num{2.0}  & \num{2.0} & \num{2.0}  \\
+\SI{30 }{m} & \SI{2.47 }{\nano\second} & \SI{1.11}{\nano\second} & \SI{3.99 }{\nano\second} & \num{0.62} & \num{3.2}  & \num{3.3} & \num{3.2}  \\
+\SI{40 }{m} & \SI{3.37 }{\nano\second} & \SI{1.44}{\nano\second} & \SI{5.26 }{\nano\second} & \num{0.64} & \num{4.3}  & \num{4.2} & \num{4.3}  \\
+\SI{50 }{m} & \SI{4.45 }{\nano\second} & \SI{1.93}{\nano\second} & \SI{6.97 }{\nano\second} & \num{0.64} & \num{5.7}  & \num{5.7} & \num{5.7}  \\
+\SI{60 }{m} & \SI{5.31 }{\nano\second} & \SI{2.41}{\nano\second} & \SI{8.63 }{\nano\second} & \num{0.61} & \num{6.8}  & \num{7.1} & \num{7.0}  \\
+\SI{70 }{m} & \SI{6.40 }{\nano\second} & \SI{2.74}{\nano\second} & \SI{10.88}{\nano\second} & \num{0.59} & \num{8.2}  & \num{8.0} & \num{8.8}  \\
+\SI{80 }{m} & \SI{7.82 }{\nano\second} & \SI{3.26}{\nano\second} & \SI{12.54}{\nano\second} & \num{0.62} & \num{10.0} & \num{9.6} & \num{10.2} \\
+\SI{90 }{m} & \SI{9.59 }{\nano\second} & \SI{3.95}{\nano\second} & \SI{14.49}{\nano\second} & \num{0.66} & \num{12.3} & \num{11.6}& \num{11.8} \\
+\SI{100}{m} & \SI{10.18}{\nano\second} & \SI{4.20}{\nano\second} & \SI{16.33}{\nano\second} & \num{0.62} & \num{13.1} & \num{12.4}& \num{13.2} \\
+\bottomrule
+\end{tabular}
+    \caption{growth.........TODO xxxx} % Ratio vector:list
+    \label{tab:growth}
+    \end{table}
 
 %     \begin{table}[ht]
 %         \centering
