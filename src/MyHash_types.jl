@@ -2,7 +2,7 @@
 # Types for MyHash module in MyHash.jl
 
 abstract type HashTable{K,T} end
-abstract type OpenAddressingHT{K,T} <: HashTable{K,T} end
+abstract type OpenAddressHT{K,T} <: HashTable{K,T} end
 
 mutable struct Node{K,T}
     key::K
@@ -17,17 +17,17 @@ struct Datum{K,T}
 end
 
 """
-    ClosedAddressing{K,T}
+    ClosedAddressHT{K,T}
 Collision resolution by chaining.
 Each slot of the vector contains a reference to a singly-linked list containing
 key-value pairs with the same hash value
 """
-mutable struct ClosedAddressingHT{K,T} <: HashTable{K,T}
+mutable struct ClosedAddressHT{K,T} <: HashTable{K,T}
     data::Vector{Union{Nothing, Node{K,T}}}
     mod # slot-size
     n # amt of entries
 
-    (ClosedAddressingHT{K,T}(m::Int) where {K,T} = 
+    (ClosedAddressHT{K,T}(m::Int) where {K,T} = 
       new{K,T}(
           Vector{Union{Nothing, Node{K,T}}}(nothing, m),
           m,
@@ -35,15 +35,15 @@ mutable struct ClosedAddressingHT{K,T} <: HashTable{K,T}
 end
 
 """
-    DynamicOpenAddressingHT{K,T}
+    DynamicOpenAddressHT{K,T}
 Collision resolution by linear probing.
 """
-mutable struct DynamicOpenAddressingHT{K,T} <: OpenAddressingHT{K,T}
+mutable struct DynamicOpenAddressHT{K,T} <: OpenAddressHT{K,T}
     data::Vector{Union{Nothing, Datum{K,T}}}
     mod # slot-size
     n # amt of entries
 
-    (DynamicOpenAddressingHT{K,T}(m::Int) where {K,T} = 
+    (DynamicOpenAddressHT{K,T}(m::Int) where {K,T} = 
       new{K,T}(
           Vector{Union{Nothing, Datum{K,T}}}(nothing, m),
           m, 
@@ -51,15 +51,15 @@ mutable struct DynamicOpenAddressingHT{K,T} <: OpenAddressingHT{K,T}
 end
 
 """
-    StaticOpenAddressingHT{K,T}
+    StaticOpenAddressHT{K,T}
 Collision resolution by linear probing.
 """
-mutable struct StaticOpenAddressingHT{K,T} <: OpenAddressingHT{K,T}
+mutable struct StaticOpenAddressHT{K,T} <: OpenAddressHT{K,T}
     data::Vector{Union{Nothing, Datum{K,T}}}
     mod # slot-size
     n # amt of entries
 
-    (StaticOpenAddressingHT{K,T}(m::Int) where {K,T} = 
+    (StaticOpenAddressHT{K,T}(m::Int) where {K,T} = 
       new{K,T}(
           Vector{Union{Nothing, Datum{K,T}}}(nothing, m),
           m, 

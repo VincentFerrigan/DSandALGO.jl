@@ -19,10 +19,16 @@ size(node::Union{Nothing, Node{K,T}}) where {K,T} = begin
     isa(node, Nothing) ? 0 : node.size end
 
 ## Short utils and wrappers
-m(caht::ClosedAddressingHT) = caht.mod
-m(oaht::OpenAddressingHT) = oaht.mod
+m(caht::ClosedAddressHT) = caht.mod
+m(oaht::OpenAddressHT) = oaht.mod
 
-hashing = (key, m) -> hashingByDivision(key, m)
+function hashing(key::Integer, m) 
+    hashingByDivision(key, m)
+end
+
+function hashing(key::String, m)
+    mod1(hash(key), m)
+end
 
 """
     hashingByDivision(key::T, m) -> mod1(key, m)
@@ -31,21 +37,19 @@ To help avoid pathological cases, the choice of m is important. In particular, m
 a power of 2 is usually avoided since, in a binary computer, taking the
 remainder modulo a power of 2 means simply discarding some high-order bits.
 """
-function hashingByDivision(key::Integer, m) # or where T <: Int
-    mod1(key, m)
-end
+hashingByDivision = (k::Integer, m) -> mod1(k, m)
 
 ## Base overload methods
 """
-    get(caht::ClosedAddressingHT{K,T}, key::K)::Union{Nothing, T}
+    get(caht::ClosedAddressHT{K,T}, key::K)::Union{Nothing, T}
 Wrapper
 """
-get(caht::ClosedAddressingHT{K,T}, key::K) where {K, T} = begin
+get(caht::ClosedAddressHT{K,T}, key::K) where {K, T} = begin
     node = search(caht, key)[1]
     return isa(node, Nothing) ? nothing : node.entry
 end
 
-get(oaht::OpenAddressingHT{K,T}, key::K) where {K, T} = begin
+get(oaht::OpenAddressHT{K,T}, key::K) where {K, T} = begin
     datum = search(oaht, key)[1]
     return isa(datum, Nothing) ? nothing : datum.entry
 end
@@ -59,12 +63,12 @@ function pushfirst!(
 end
 
 """ 
-    insert!(caht::ClosedAddressingHT{K,T}, key::K, entry::T)::Node{K,T}
+    insert!(caht::ClosedAddressHT{K,T}, key::K, entry::T)::Node{K,T}
 
 Adds an entry without checking for duplicates
 """
 function insert!(
-    caht::ClosedAddressingHT{K,T},
+    caht::ClosedAddressHT{K,T},
     key::K,
     entry::T
     ) where {K,T}
@@ -75,12 +79,13 @@ function insert!(
 end
 
 """
-    insert!(oaht::StaticOpenAddressingHT{K,T}, key::K, entry::T)::Datum{K,T}
+    insert!(oaht::StaticOpenAddressHT{K,T}, key::K, entry::T)::Datum{K,T}
 
+    α
 Adds an entry. Duplicates are overwritten.
 """
 function insert!(
-    oaht::StaticOpenAddressingHT{K,T}, 
+    oaht::StaticOpenAddressHT{K,T}, 
     key::K,
     entry::T
     ) where {K,T}
@@ -101,12 +106,12 @@ function insert!(
 end
 
 """
-    insert!(oaht::DynamicOpenAddressingHT{K,T}, key::K, entry::T)::Datum{K,T}
+    insert!(oaht::DynamicOpenAddressHT{K,T}, key::K, entry::T)::Datum{K,T}
 
 Adds an entry. Duplicates are overwritten.
 """
 function insert!(
-    oaht::DynamicOpenAddressingHT{K,T}, 
+    oaht::DynamicOpenAddressHT{K,T}, 
     key::K,
     entry::T
     ) where {K,T}
@@ -128,13 +133,13 @@ end
 
 ## functions and methods
 function resize!(
-    oaht::DynamicOpenAddressingHT{K,T},
+    oaht::DynamicOpenAddressHT{K,T},
     capacity,
     ktype::DataType,
     ttype::DataType
     ) where {K,T}
 
-    tempHT = DynamicOpenAddressingHT{ktype,ttype}(capacity)
+    tempHT = DynamicOpenAddressHT{ktype,ttype}(capacity)
     for datum ∈ oaht.data
         (!isa(datum, Nothing) 
           && insert!(tempHT, datum.key, datum.entry))
@@ -145,13 +150,13 @@ function resize!(
 end
 
 """
-    search(caht::ClosedAddressingHT{K,T}, key::K)::Union{Nothing, Node{K,T}}
+    search(caht::ClosedAddressHT{K,T}, key::K)::Union{Nothing, Node{K,T}}
 
 # OpenIssue: 
 It returns the node and amount of attempts it had to take to find the item
 
 """
-function search(caht::ClosedAddressingHT{K,T}, key::K) where {K,T}
+function search(caht::ClosedAddressHT{K,T}, key::K) where {K,T}
     h_value = hashing(key, m(caht))
     node = caht.data[h_value]
 
@@ -168,7 +173,7 @@ function search(caht::ClosedAddressingHT{K,T}, key::K) where {K,T}
 end
 
 function search(
-    oaht::OpenAddressingHT{K,T}, 
+    oaht::OpenAddressHT{K,T}, 
     key::K
     ) where {K, T}
 
@@ -182,17 +187,17 @@ function search(
             pos = mod1((pos + 1), m(oaht)) # or mod1(pos+1,length(oaht.data))
         end
     end
-    @assert pos == mod!(hashing(key, m(oaht)) + attempts, length(oaht.data))
+    @assert pos == mod1(hashing(key, m(oaht)) + attempts, length(oaht.data))
     return nothing, attempts
 end
 
 ## For testing and benchmark data
-searchattempts(caht::ClosedAddressingHT{K,T}, key::K) where {K, T} = begin
+searchattempts(caht::ClosedAddressHT{K,T}, key::K) where {K, T} = begin
     node, attempts = search(caht, key)
     return isa(node, Nothing) ? (nothing, attempts) : (node.entry, attempts)
 end
 
-searchattempts(oaht::OpenAddressingHT{K,T}, key::K) where {K, T} = begin
+searchattempts(oaht::OpenAddressHT{K,T}, key::K) where {K, T} = begin
     datum, attempts = search(oaht, key)
     return isa(datum, Nothing) ? (nothing, attempts) : (datum.entry, attempts)
 end
@@ -205,7 +210,7 @@ If size one, no collision
 if size two, 1 collision...
 if size n, n-1 collisions
 """
-function getcollisiondata(caht::ClosedAddressingHT, key)
+function getcollisiondata(caht::ClosedAddressHT, key)
     hashvalue = hashing(key, m(caht))
     chainsize = size(caht.data[hashvalue])
     return hashvalue, chainsize

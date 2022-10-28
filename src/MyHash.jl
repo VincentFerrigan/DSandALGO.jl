@@ -56,7 +56,7 @@ import Base: pushfirst!, insert!, get
 include("MyHash_types.jl")
 include("MyHash_utils.jl")
 
-export ClosedAddressingHT, DynamicOpenAddressingHT, StaticOpenAddressingHT # Constructors
+export ClosedAddressHT, DynamicOpenAddressHT, StaticOpenAddressHT # Constructors
 export Node, Datum # Node constructor (for unit testing)
 export insert!, get # base overload method
 export searchattempts, getcollisiondata, hashing # for testing and benchmark data

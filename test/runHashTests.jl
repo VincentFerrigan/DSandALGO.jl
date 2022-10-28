@@ -51,7 +51,7 @@ println()
 
 @testset "Buckets get and insert!" begin
     m = 10000
-    h_table = ClosedAddressingHT{Int64, ZipNode{Int64}}(m)
+    h_table = ClosedAddressHT{Int64, ZipNode{Int64}}(m)
 
     # testnode = Node{Int64, ZipNode{Int64}}(key, zipcode, nothing, 1)
     # insert!(h_table, key, zipcode)
@@ -82,7 +82,7 @@ println()
 
 @testset "DynamicLinearProbHT get and insert!" begin
     m = 1000
-    h_table = DynamicOpenAddressingHT{Int64, ZipNode{Int64}}(m)
+    h_table = DynamicOpenAddressHT{Int64, ZipNode{Int64}}(m)
     # println("mod: ", h_table.mod, " n: ", h_table.n)
 
     # zipcode = v_intkey[100]
@@ -115,7 +115,7 @@ println()
 
 @testset "StaticLinearProbHT get and insert!" begin
     m = 10000
-    h_table = StaticOpenAddressingHT{Int64, ZipNode{Int64}}(m)
+    h_table = StaticOpenAddressHT{Int64, ZipNode{Int64}}(m)
     # println("mod: ", h_table.mod, " n: ", h_table.n)
 
     # zipcode = v_intkey[100]
@@ -199,13 +199,13 @@ end
 # println("Linear String Search: ", median(lss))
 # println("Binary Integer Search: ", median(bis))
 # println("Binary String Search: ", median(bss))
-# println("Direct Addressing Lookup: ", median(da))
+# println("Direct Address Lookup: ", median(da))
 
 # println("Linear Integer Search: ", mlis)
 # println("Linear String Search: ", mlss)
 # println("Binary Integer Search: ", mbis)
 # println("Binary String Search: ", mbss)
-# println("Direct Addressing Lookup: ", mda)
+# println("Direct Address Lookup: ", mda)
 
 # println(ratio(mda, mlss))
 # # testprints
