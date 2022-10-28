@@ -1,7 +1,7 @@
    
-%! Linked Lists
+%! Tree and Queues
 %! Author = Vincent Ferrigan <ferrigan@kth.se>
-%! Date = 2022-09-21
+%! Date = 2022-10-07
 
 
 % Preamble
@@ -142,7 +142,9 @@
     \mintinline{julia}{Nothing}, when such a side effect is
     desired. 
 
+    \clearpage
     \subsection*{The Binary Tree}
+    \label{sec:thebinarytree}
     Like \emph{linked lists}, \emph{binary trees} are dynamic data structures that, unlike \emph{vectors}, 
     do not require to be stored contiguously in memory. They are instead composed of \emph{nodes} 
     that are linked together by pointers or references. 
@@ -165,13 +167,24 @@
     The fields that contain references to other nodes may point to nothing 
     which, as previously mentioned, is a singleton instance of type \mintinline{julia}{Nothing}.
     \autoref{code:node} shows how the above-mentioned nodes were implemented in Julia. 
-    \begin{figure}[H]
+    Since the fields \mintinline{julia}{left} and \mintinline{julia}{right} only sometimes 
+    contain a reference to another node, the data type \mintinline{julia}{Union} was used for their 
+    field declaration -- a union that includes the composite
+    data type (for the node in question) and `nothing`.
+
+    The first node in the tree is conventionally called \emph{the root}, as in the root of the tree.
+    The tree therefore usually only contains one item, the reference to the first node, the root that is.
+    See \autoref{code:binarytree}. Apart from the root, 
+    each node in a binary tree is pointed to by just one other node, which is called its \emph{parent}. 
+    At most, every node can have two children, the first is called the \emph{left child}
+    and the second is called the \emph{right child}.  
+    \begin{figure}[h]
         \centering
     \begin{minted}[
-        % label=codeexample, 
+        label= Node Data Type (Custom Struct),
         linenos, 
         % breaklines, 
-        % frame = single, 
+        frame = single, 
         fontsize=\footnotesize]{julia}
 mutable struct BTNode{K, V} <:MyAbstractTreeNode{K, V} 
     key::K
@@ -185,41 +198,7 @@ end
     \label{code:node}
     \end{figure}
 
-    Since the fields \mintinline{julia}{left} and \mintinline{julia}{right} only sometimes 
-    contain a reference to another node, the data type \mintinline{julia}{Union} was used for their 
-    field declaration -- a union that includes the composite
-    data type (for the node in question) and `nothing`.
-
-    The first node in the tree is conventionally called \emph{the root}, as in the root of the tree.
-    The tree therefore usually only contains one item, the reference to the first node, the root that is.
-    See \autoref{code:binarytree}. Apart from the root, 
-    each node in a binary tree is pointed to by just one other node, which is called its \emph{parent}. 
-    At most, every node can have two children, the first is called the \emph{left child}
-    and the second is called the \emph{right child}.  
-    
-    \begin{figure}[H]
-        \centering
-    \begin{minted}[
-        % label=codeexample, 
-        linenos, 
-        % breaklines, 
-        % frame = single, 
-        fontsize=\footnotesize]{julia}
-mutable struct BTree{K, V} <: MyBinaryTree{K, V}
-    root::Union{Nothing, BTNode{K, V}}
-    # depth::Int
-end
-
-# Outer constructs
-BTree{K, V}() where {K, V} = BTree{K, V}(nothing)
-# BTree{T}() where {T} = BTree{T}(nothing, 0)
-    \end{minted}
-    \caption{A Binary Search Tree in Julia.
-    The commented out code points to the fact that the number of nodes that a tree holds can also be
-    included in a BST implementation.}
-    \label{code:binarytree}
-    \end{figure}
-
+    \clearpage
     A node of a tree is called a \emph{leaf} if it has no children. Nodes that
     have at least one child are called \emph{internal nodes}. 
     The root is internal node unless it is the only node in the tree, in which case it is a leaf. 
@@ -239,8 +218,33 @@ BTree{K, V}() where {K, V} = BTree{K, V}(nothing)
     its left subtree and smaller than the keys of all the nodes in its right
     subtree. The siblings are therefore ordered from left to right.
 
+    \begin{figure}[h]
+        \centering
+    \begin{minted}[
+        label=Binary Tree Data Type (Custom Struct), 
+        linenos, 
+        % breaklines, 
+        frame = single, 
+        fontsize=\footnotesize]{julia}
+mutable struct BTree{K, V} <: MyBinaryTree{K, V}
+    root::Union{Nothing, BTNode{K, V}}
+end
+    \end{minted}
+    \begin{minted}[
+        label=Outer construct, 
+        linenos, 
+        % breaklines, 
+        frame = single, 
+        fontsize=\footnotesize]{julia}
+BTree{K, V}() where {K, V} = BTree{K, V}(nothing)
+    \end{minted}
+    \caption{A Binary Search Tree implementation in Julia.}
+    \label{code:binarytree}
+    \end{figure}
+
     \clearpage
-    \subsection*{Adding and updating}
+    \subsubsection*{Adding and updating}
+    \label{sec:adding}
     The procedure for adding a new item (consisting of a key and its associated value)
     to the BST requires comparing keys of
     nodes that already exist in the BST. Starting at the root and moving left
@@ -261,16 +265,22 @@ BTree{K, V}() where {K, V} = BTree{K, V}(nothing)
     \begin{figure}[H]
         \centering
     \begin{minted}[
-        % label=codeexample, 
+        label=Outer method, 
         linenos, 
         % breaklines, 
-        % frame = single, 
+        frame = single, 
         fontsize=\footnotesize]{julia}
 function add!(tree::BTree{K, V}, key::K, value::V) where {K,V}
     tree.root = add!(tree.root, key, value)
     tree
 end
-
+    \end{minted}
+    \begin{minted}[
+        label=Inner method, 
+        linenos, 
+        % breaklines, 
+        frame = single, 
+        fontsize=\footnotesize]{julia}
 function add!(
     node::Union{BTNode{K, V}, Nothing}, 
     key::K, 
@@ -297,8 +307,8 @@ end
     \label{code:add!}
     \end{figure}
 
-    \clearpage
-    \subsection*{Accessing through lookup}
+    \subsubsection*{Accessing through lookup}
+    \label{sec:lookup}
     The procedure of locating an item acts similarly to adding one to
     a BST. 
     The function, which also consist of two methods, is named 'lookup' (in
@@ -313,16 +323,27 @@ end
     \begin{figure}[H]
         \centering
     \begin{minted}[
-        % label=codeexample, 
+        label=Outer method, 
         linenos, 
         % breaklines, 
-        % frame = single, 
+        frame = single, 
         fontsize=\footnotesize]{julia}
-lookup(tree::BTree{K,V}, key::K) where {K,V} = lookup(tree.root, key)
-
-function lookup(node::Union{BTNode{K, V}, Nothing}, key::K) where {K,V}
+function lookup(tree::BTree{K,V}, key::K) where {K,V} 
+    lookup(tree.root, key)
+end
+    \end{minted}
+    \begin{minted}[
+        label=Inner method, 
+        linenos, 
+        % breaklines, 
+        frame = single, 
+        fontsize=\footnotesize]{julia}
+function lookup(
+    node::Union{BTNode{K, V}, Nothing}, 
+    key::K
+    ) where {K,V}
+    
     isa(node, Nothing) && return nothing
-
     if key < node.key
         lookup(node.left, key)
     elseif key > node.key
@@ -340,6 +361,7 @@ end
     \mintinline{julia}{lookup} is called \emph{'get'}.
     % ska jag lägga till ref (sedgewick), och även nämna 'search' från Cormen??  
 
+
     \subsection*{The Traversal Algorithms}
     \label{sec:treetraversal}
     
@@ -349,7 +371,7 @@ end
     The question of order is of same importance as visiting each node only once. 
     
     \subsubsection*{Downwards or sideways?}
-
+    \label{sec:breadthfirsttraversal}
     The \emph{Depth-First} approach traverses downwards through each branch of a (sub)tree
     before backtracking. It is implemented using a \emph{stack}, which will enable 
     the use of recursion -- since each subtree are themselves binary trees. Compare
@@ -362,8 +384,9 @@ end
 
     The development of these traversal algorithms were done 
     through iterative testing. 
+
     At first, a balanced BST was created by adding key-value pairs in the following 
-    left-to-right, level-by-level, order: 
+    order: 
     \begin{minted}[
         % label=codeexample, 
         % linenos, 
@@ -372,336 +395,123 @@ end
         fontsize=\footnotesize]{julia}
 tree = BTree{Int64, String}()
 
-add!(tree, 4, "Tree      Root    ROOT")
-add!(tree, 2, "L-Subtree Root    INTERNAL NODE")
-add!(tree, 6, "R-Subtree Root    INTERNAL NODE")
-add!(tree, 1, "L-Subtree L-child LEAF")
-add!(tree, 3, "L-Subtree R-child LEAF")
-add!(tree, 5, "R-Subtree L-child LEAF")
-add!(tree, 7, "R-Subtree R-child LEAF")
+add!(tree, 4, "1st")  # Tree      Root    ROOT
+add!(tree, 2, "2nd")  # L-Subtree Root    INTERNAL NODE
+add!(tree, 1, "3rd")  # L-Subtree L-child LEAF
+add!(tree, 3, "4th")  # L-Subtree R-child LEAF
+add!(tree, 6, "5th")  # R-Subtree Root    INTERNAL NODE
+add!(tree, 5, "7th")  # R-Subtree L-child LEAF
+add!(tree, 7, "8th")  # R-Subtree R-child LEAF
     \end{minted}
-    The string values above point to where they are located in the tree. 
+    
+\begin{tikzpicture}[
+  every node/.style = {minimum width = 1em, draw, circle},
+  level/.style = {sibling distance = 60mm/#1}
+  ]
+  \small
+  \node {$4 \Rightarrow$ "1st"}
+  child {node {$2 \Rightarrow$ "2nd"} 
+        child {node {$1 \Rightarrow$ "3rd"}}
+        child {node {$3 \Rightarrow$ "4th"}}
+        }
+  child {node {$6 \Rightarrow$ "5th"}
+        child {node {$5 \Rightarrow$ "6th"}}
+        child {node {$7 \Rightarrow$ "7th"}}
+        };
+\end{tikzpicture}
+
+    Single line comments in Julia start with the hashtag symbol(\#) and lasts
+    till the end of the line. 
+    The comments above point to where the nodes are located in the tree. 
+
     Depending on traversal algorithm, the values were updated and traversed in accordance 
     with \autoref{tab:traversalalgorithms}.
-    \begin{table}[h]
-        \small
-        \centering
-    \begin{tabular}{|l|l|l|}
-        \hline
-        \textbf{Traversal}           & \textbf{Print results} (Key $\Rightarrow$ Value)  & \textbf{Node position}\\
-        \hline\hline
-        \multirow{7}{*}{Breadth-first}& 4 $\Rightarrow$ "Kanada - Guld"         & \textbf{Tree-Root} \\
-                                      & 2 $\Rightarrow$ "Kanada - Final"        & L Subtree Root\\
-                                      & 6 $\Rightarrow$ "Sverige - Final"       & R Subtree Root\\
-                                      & 1 $\Rightarrow$ "Kanada - Semifinal"    & L Subtree Left-Child\\
-                                      & 3 $\Rightarrow$ "USA - Semifinal"       & L Subtree Right-Child\\
-                                      & 5 $\Rightarrow$ "Australien - Semifinal" & R Subtree Left-Child\\
-                                      & 7 $\Rightarrow$ "Sverige - Semifinal"    & R Subtree Right-Child\\
-        \hline
-        \multirow{7}{*}{Pre-order}    & 4 $\Rightarrow$ "One"       & \textbf{Tree-Root} \\ % ska jag ändra om till prefix (polish notation)
-                                      & 2 $\Rightarrow$ "Two"       & L Subtree Root\\
-                                      & 1 $\Rightarrow$ "Three"     & L Subtree Left-Child\\
-                                      & 3 $\Rightarrow$ "Four"      & L Subtree Right-Child\\
-                                      & 6 $\Rightarrow$ "Five"      & R Subtree Root\\\
-                                      & 5 $\Rightarrow$ "Six"       & R Subtree Left-Child\\
-                                      & 7 $\Rightarrow$ "Seven"     & R Subtree Right-Child\\
-        \hline
-        \multirow{7}{*}{Post-order}   & 1 $\Rightarrow$ "1"         & L Subtree Left-Child\\
-                                      & 3 $\Rightarrow$ "2"         & L Subtree Right-Child\\
-                                      & 2 $\Rightarrow$ "+"         & L Subtree Root\\
-                                      & 5 $\Rightarrow$ "3"         & R Subtree Left-Child\\
-                                      & 7 $\Rightarrow$ "4"         & R Subtree Right-Child\\
-                                      & 6 $\Rightarrow$ "+"         & R Subtree Root/Parent\\\
-                                      & 4 $\Rightarrow$ "*"         & \textbf{Tree-Root} \\
-        \hline
-        \multirow{7}{*}{In-order}     & 1 $\Rightarrow$ "One"       & L Subtree Left-Child\\
-                                      & 2 $\Rightarrow$ "Two"       & L Subtree Root\\
-                                      & 3 $\Rightarrow$ "Three"     & L Subtree Right-Child\\
-                                      & 4 $\Rightarrow$ "Four"      & \textbf{Tree-Root} \\
-                                      & 5 $\Rightarrow$ "Five"      & R Subtree Left-Child\\
-                                      & 6 $\Rightarrow$ "Six"       & R Subtree Root\\
-                                      & 7 $\Rightarrow$ "Seven"     & R Subtree Right-Child\\
-        \hline
-    \end{tabular}
-    \caption{The print results over a tree, depending on custom iterator.}
-    \label{tab:traversalalgorithms}
-    \end{table}
-
-    The In-order traversal visits the nodes in key ascending order while the
-    the post-order traversal can be used as a procedure for 
-    expression evaluation of Reversed Polish Notation (RPN)
-    (also called postfix notation). RPN is used to express mathematical formulas 
+    A \emph{In-order traversal} visits the nodes in key ascending order while the
+    \emph{post-order traversal} can be used as a procedure for 
+    expression evaluation of Reversed Polish Notation (RPN) -- also called
+    postfix notation. RPN is used to express mathematical formulas 
     that do not need the use of 
     brackets to keep the order of precedence. 
     The example found in \autoref{tab:traversalalgorithms} holds the postfix
-    expression $1$ $2 + 3$ $4 +*$.
+    expression \mintinline{postscript}{1 2 + 3 4 + *}.
 
     The print-results were performed with for-loops based on 
     different custom iterators. 
-    The formatting was done through \emph{pretty printing} based on the 
-    following \emph{base function overload}:
+    The formatting was done through \emph{pretty printing}, by overloading the base function show.
     \begin{minted}[
-        % label=codeexample, 
-        % linenos, 
+        label=pretty-printing, 
+        linenos, 
         % breaklines, 
-        % frame = single, 
+        frame = single, 
         fontsize=\footnotesize]{julia}
-# Pretty-Printing
 function show(io::IO, node::BTNode{K,V}) where {K,V}
     print(" key: ", node.key, " => value: ", node.value)
 end
     \end{minted}
-
     This paper will focus on two custom iterators. 
     One based on the Pre-order (depth first) approach
     and the other on the breadth-first. 
     The former was implemented using a \emph{stack} while the latter
     used a \emph{queue}
 
-\clearpage    
-    \subsubsection*{Breadth-first traversal}
-    Traversing through a tree sideways from left to right, one level at a time requires 
-    the use of a different data structure -- the \emph{queue}. 
-
-    A list-based queue has fields that point to the linked lists head and a tail. The
-    \mintinline{julia}{first} points to its head while the field
-    \mintinline{julia}{last} points to the tail. 
-    Adding a field that keeps track of the reference to the tail enhances the 
-    performance of the push!(), pop!() and append!() operations on lists, 
-    regardless of how their nodes are linked. All three involving the tail. 
-    The time complexity changes to constant time
-    $O(n)$.  Not maintaining a reference to the tail requires a time-cost proportional to the 
-    size of the list. The fields in a vector-based queue points to indices. 
-    \begin{minted}[
-        % label=codeexample, 
-        % linenos, 
-        % breaklines, 
-        % frame = single, 
-        fontsize=\footnotesize]{julia}
-mutable struct SLQueue{T} <: MyListQueue{T}
-    items::MyLL.ISinglyLinkedList{T}
-    first
-    last
-    n
-    function SLQueue{T}() where {T}
-        isll = MyLL.ISinglyLinkedList{T}()
-        new(isll, isll.head, isll.tail, isll.n)
-    end
-end
-
-mutable struct DynamicQueue{T} <: MyVectorQueue{T}
-    items::Vector{Union{Nothing, T}}
-    first
-    last
-    n     # number of slots used, not equal to last
-    function DynamicQueue{T}(queuecapacity = 4) where {T}
-        new(Vector{Union{Nothing, T}}(nothing, queuecapacity), 1, 1, 0)
-    end
-end
-
-    \end{minted}
-The add operation is called \mintinline{julia}{enqueue!} while the 'pop-first'
-(removal) operation is called \mintinline{julia}{dequeue!}. 
-
-Items are added and removed based on the First-In-First (FIFO) approach. 
-In other words, the data structure operates just like a regular queue of
-customers waiting for service. 
-Linked-list based queues are quite straight forwards 
-(as shown in figure \autoref{code:listoperations}).
-As the reader can see in the code examples in
-\autoref{code:vectoroperations}, vector-based queues require both modulo
-arithmetic (see line 37) and resizing 
-(see function \mintinline{julia}{resizequeue!} line 33-47), 
-depending on the queue's length.
-
-    \begin{figure}[H]
-        \centering
-    \begin{minted}[
-        % label=codeexample, 
-        linenos, 
-        % breaklines, 
-        % frame = single, 
-        fontsize=\footnotesize]{julia}
-function enqueue!(queue::SLQueue{T}, item::T) where {T}
-    MyLL.push!(queue.items, item)
-    queue.first = queue.items.head
-    queue.last = queue.items.tail
-    queue.n += 1
-end
-
-function dequeue!(queue::SLQueue) where {T}
-    queue.n == 0 && return nothing
-    item = MyLL.popfirst!(queue.items)
-    queue.first = queue.items.head
-    queue.last = queue.items.tail
-    queue.n -= 1
-    return item
-end
-    \end{minted}
-    \caption{Methods for operating linked-list based queues}
-    \label{code:listoperations}
-    \end{figure}
-
-    \begin{figure}[H]
-        \centering
-    \begin{minted}[
-        % label=codeexample, 
-        linenos, 
-        % breaklines, 
-        % frame = single, 
-        fontsize=\footnotesize]{julia}
-function enqueue!(queue::DynamicQueue{T}, item::T) where {T}
-    if length(queue) == queuecapacity(queue) 
-        resizequeue!(queue, *(queuecapacity(queue), 2))
-    end
-
-    queue.items[queue.last] = item
-    if queue.last == queuecapacity(queue)
-        queue.last = 1
-    else
-        queue.last += 1
-    end
-    queue.n += 1
-end
-
-function dequeue!(queue::DynamicQueue{T}) where {T}
-    if (length(queue) > 0 && 
-        length(queue) == ÷(queuecapacity(queue), 4)
-        )
-        resizequeue!(queue, ÷(queuecapacity(queue), 2))
-    end
-
-    item = queue.items[queue.first] 
-    queue.items[queue.first] = nothing
-    if queue.first == queuecapacity(queue)
-        queue.first = 1
-    else
-        queue.first += 1
-    end
-    queue.n -= 1
-    return item
-end
-
-function resizequeue!(queue::DynamicQueue{T}, newsize::Int) where {T}
-	temp = Vector{Union{Nothing, T}}(nothing, newsize)
-
-    for i = 1:length(queue)
-        pos = %((queue.first + i - 1), queuecapacity(queue))
-        if pos == 0 
-            pos = queuecapacity(queue)
-        end
-        temp[i] = queue.items[pos]
-    end
-
-	queue.items = temp
-    queue.first = 1
-    queue.last = queue.first + queue.n
-end
-    \end{minted}
-    \caption{Methods for operating vector-based queues}
-    \label{code:vectoroperations}
-    \end{figure}
-
-As mentioned before, the custom iterator for breadth first traversal uses the queue quite
-elegantly. As shown in figure \autoref{code:bfs}. Not much is required from the programmer. 
-    \begin{figure}[H]
-        \centering
-    \begin{minted}[
-        % label=codeexample, 
-        linenos, 
-        % breaklines, 
-        % frame = single, 
-        fontsize=\footnotesize]{julia}
-function iterate(
-    tree::BTree{K,V}, 
-    node::Union{BTNode{K, V}, Nothing} = tree.root,
-    ) where {K, V}
-
-    queue = DynamicQueue{Union{BTNode{K, V}, Nothing}}()
-    !isa(node.left, Nothing) && enqueue!(queue, node.left)
-    !isa(node.right, Nothing) && enqueue!(queue, node.right)
-    (node === nothing ?
-    nothing :
-    node, queue 
-    )
-end
-
-function iterate(_::BTree{K, V}, queue) where {K,V} # BFS
-    node = dequeue!(queue)
-    isa(node, Nothing) && return nothing
-    !isa(node.left, Nothing) && enqueue!(queue, node.left)
-    !isa(node.right, Nothing) && enqueue!(queue, node.right)
-    return node, queue 
-end
-    \end{minted}
-    \caption{A breadth first iterator using a queue}
-    \label{code:bfs}
-    \end{figure}
-    % An Inorder traversal produces the infix representation of the expression.
-    % A Postorder traversal produces the postfix representation of the expression. (RPN)
+    \subsubsection*{Pre-order traversal}
+    A pre-order traversal is used to create copies of binary trees. 
     % A Preorder traversal produces a representation that is the same as the way
     % % that the programming language Lisp processes arithmetic expressions. (PREFIX)
-    % \subsubsection*{Pre-order traversal}
-    % % Traverses the root node first, then the left and right subtrees respectively.
-    % % % #### Tror det var den jag de facto byggde!!! 
-    % % NLR (Node Left Right)
-    
-    % Preorder (DLR): Read the data of the node, then visit the left
-    % subtree/nodes, followed by the right subtree/nodes.
+    It also produces a prefix representation of an arithmetic expression. 
+    E.g. a program written in a lisp dialect, would write the previously 
+    mentioned postfix notation \mintinline{postscript}{1 2 + 3 4 + *} in preorder
+    as \mintinline{scheme}{(* (+ 1 2)(+ 3 4))}. 
+    This arithmetic expression can also be written with a lisp-like syntax in
+    Julia as \mintinline{julia}{*(+(1, 2), +(3, 4))}.
 
-    % HÄR KAN DU VISA DIN PRINT TRÄD FUNKTION
-    % % 1. Traverse the root node
-    % 2. Traverse the left subtree
-    % 3. Traverse the right subtree
-
-    % It is useful when searching for an element within a BST
-
-    % A preorder traversal is used to create a copy of the tree and is also used To
-    % get prefix expression on a expression tree
-
-    % % a pre-order traversal on a topologically ordered tree is useful for listing
-    % % the dependency before the dependants. Topological ordering has use cases in
-    % % dynamic linking of programs and resolving dependencies as well as processor
-    % % scheduling.
-
-    \clearpage
-    \subsubsection*{Pre-order traversal}
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[
+  every node/.style = {minimum width = 1em, draw, circle},
+  level/.style = {sibling distance = 25mm/#1}
+  ]
+  \node {*}
+  child {node {+} 
+        child {node {1}}
+        child {node {2}}
+        }
+  child {node {+}
+        child {node {3}}
+        child {node {4}}
+        };
+\end{tikzpicture}
+\end{figure}
+Describe ....
     \begin{figure}[H]
         \centering
     \begin{minted}[
-        % label=codeexample, 
+        label=Outer method, 
         linenos, 
         % breaklines, 
-        % frame = single, 
+        frame = single, 
         fontsize=\footnotesize]{julia}
-function iterate(
-    tree::BTree{K,V}, 
-    node::Union{BTNode{K, V}, Nothing} = tree.root
-    ) where {K, V}
-    (node === nothing ? 
-    nothing : 
-    (node, push!(SinglyLLStack{BTNode{K, V}}(), node))
-        )
+function iterate(tree::BTree{K,V}) where {K, V}
+    isempty(tree) && return nothing
+    node = tree.root
+    stack = SinglyLLStack{Union{BTNode{K, V}, Nothing}}()
+    !isa(node.right, Nothing) && push!(stack, node.right)
+    !isa(node.left, Nothing) && push!(stack, node.left)
+    return node, stack
 end
-
-function iterate(_::BTree{K, V}, stack) where {K,V} # Node, Left, Right
-    node = MyStacks.peek(stack) # peek or pop? 
-    isa(node, Nothing) && return nothing # if stack is empty
-
-    if !isa(node.left, Nothing) 
-        return (node.left, MyStacks.push!(stack, node.left))
-    end
-
-    while !isa(node, Nothing) 
-        if !isa(node.right, Nothing)
-            MyStacks.pop!(stack)
-            return (node.right, MyStacks.push!(stack, node.right))
-        else #LEAF!
-            MyStacks.pop!(stack)
-            node = MyStacks.peek(stack)
-        end
-    end
-    return nothing
+    \end{minted}
+    \begin{minted}[
+        label=Inner method, 
+        linenos, 
+        % breaklines, 
+        frame = single, 
+        fontsize=\footnotesize]{julia}
+function iterate(_::BTree{K, V}, stack) where {K,V}
+    node = pop!(stack)
+    isa(node, Nothing) && return nothing 
+    !isa(node.right, Nothing) && push!(stack, node.right)
+    !isa(node.left, Nothing) && push!(stack, node.left)
+    return node, stack
 end
     \end{minted}
     \caption{A preorder iterator using a stack}
@@ -743,8 +553,240 @@ end
     % % children, it will traverse through that node’s children from left to right
     % % and then continue rightwards.
    \clearpage 
-    \section*{Benchmark Results}
+    \subsubsection*{Breadth-first traversal}
+    \label{sec:breadthfirsttraversal}
+    Traversing through a tree sideways from left to right, one level at a time requires 
+    the use of a different data structure -- the \emph{queue}. 
+
+    A list-based queue has fields that point to the linked lists head and a tail. The
+    \mintinline{julia}{first} points to its head while the field
+    \mintinline{julia}{last} points to the tail. 
+    Adding a field that keeps track of the reference to the tail enhances the 
+    performance of the push!(), pop!() and append!() operations on lists, 
+    regardless of how their nodes are linked. All three involving the tail. 
+    The time complexity changes to constant time
+    $O(n)$.  Not maintaining a reference to the tail requires a time-cost proportional to the 
+    size of the list. The fields in a vector-based queue points to indices. 
+    \begin{minted}[
+        label=List-based Queue Data Type, 
+        linenos, 
+        % breaklines, 
+        frame = single, 
+        fontsize=\footnotesize]{julia}
+mutable struct SLQueue{T} <: MyListQueue{T}
+    items::MyLL.ISinglyLinkedList{T}
+    first
+    last
+    n
+    function SLQueue{T}() where {T}
+        isll = MyLL.ISinglyLinkedList{T}()
+        new(isll, isll.head, isll.tail, isll.n)
+    end
+end
+    \end{minted}
+    \begin{minted}[
+        label=Vector-based Queue Data Type, 
+        linenos, 
+        % breaklines, 
+        frame = single, 
+        fontsize=\footnotesize]{julia}
+mutable struct DynamicQueue{T} <: MyVectorQueue{T}
+    items::Vector{Union{Nothing, T}}
+    first
+    last
+    n     # number of slots used, not equal to last
+    function DynamicQueue{T}(queuecapacity = 4) where {T}
+        new(Vector{Union{Nothing, T}}(nothing, queuecapacity), 
+        1, 1, 0)
+    end
+end
+    \end{minted}
+The add operation is called \mintinline{julia}{enqueue!} while the 'pop-first'
+(removal) operation is called \mintinline{julia}{dequeue!}. 
+
+Items are added and removed based on the First-In-First (FIFO) approach. 
+In other words, the data structure operates just like a regular queue of
+customers waiting for service. 
+Linked-list based queues are quite straight forwards 
+(as shown in figure \autoref{code:listoperations}).
+As the reader can see in the code examples in
+\autoref{code:vectoroperations}, vector-based queues require both modulo
+arithmetic and resizing (see function \mintinline{julia}{resizequeue!}), 
+depending on the queue's length.
+
+    \begin{figure}[H]
+        \centering
+    \begin{minted}[
+        label=enqueue method for list-based queues, 
+        linenos, 
+        % breaklines, 
+        frame = single, 
+        fontsize=\footnotesize]{julia}
+function enqueue!(queue::SLQueue{T}, item::T) where {T}
+    MyLL.push!(queue.items, item)
+    queue.first = queue.items.head
+    queue.last = queue.items.tail
+    queue.n += 1
+end
+    \end{minted}
+    \begin{minted}[
+        label=dequeue method for list-based queues, 
+        linenos, 
+        % breaklines, 
+        frame = single, 
+        fontsize=\footnotesize]{julia}
+function dequeue!(queue::SLQueue) where {T}
+    queue.n == 0 && return nothing
+    item = MyLL.popfirst!(queue.items)
+    queue.first = queue.items.head
+    queue.last = queue.items.tail
+    queue.n -= 1
+    return item
+end
+    \end{minted}
+    \caption{Methods for operating linked-list based queues}
+    \label{code:listoperations}
+    \end{figure}
+
+    \begin{figure}[H]
+        \centering
+    \begin{minted}[
+        label=enqueue method for vector based queues, 
+        linenos, 
+        % breaklines, 
+        frame = single, 
+        fontsize=\footnotesize]{julia}
+function enqueue!(queue::DynamicQueue{T}, item::T) where {T}
+    if length(queue) == queuecapacity(queue) 
+        resizequeue!(queue, *(queuecapacity(queue), 2))
+    end
+
+    queue.items[queue.last] = item
+    if queue.last == queuecapacity(queue)
+        queue.last = 1
+    else
+        queue.last += 1
+    end
+    queue.n += 1
+end
+    \end{minted}
+    \begin{minted}[
+        label=dequeue method for vector based queues, 
+        linenos, 
+        % breaklines, 
+        frame = single, 
+        fontsize=\footnotesize]{julia}
+function dequeue!(queue::DynamicQueue{T}) where {T}
+    if (length(queue) > 0 && 
+        length(queue) == ÷(queuecapacity(queue), 4)
+        )
+        resizequeue!(queue, ÷(queuecapacity(queue), 2))
+    end
+
+    item = queue.items[queue.first] 
+    queue.items[queue.first] = nothing
+    if queue.first == queuecapacity(queue)
+        queue.first = 1
+    else
+        queue.first += 1
+    end
+    queue.n -= 1
+    return item
+end
+    \end{minted}
+    \begin{minted}[
+        label=Resize method for vector based queues, 
+        linenos, 
+        % breaklines, 
+        frame = single, 
+        fontsize=\footnotesize]{julia}
+function resizequeue!(
+    queue::DynamicQueue{T}, 
+    newsize::Int
+    ) where {T}
+    
+    temp = Vector{Union{Nothing, T}}(nothing, newsize)
+    for i = 1:length(queue)
+        pos = %((queue.first + i - 1), queuecapacity(queue))
+        pos == 0 && pos = queuecapacity(queue)
+        temp[i] = queue.items[pos]
+    end
+    queue.items = temp
+    queue.first = 1
+    queue.last = queue.first + queue.n
+end
+    \end{minted}
+    \caption{Methods for operating vector-based queues}
+    \label{code:vectoroperations}
+    \end{figure}
+
+As mentioned before, the custom iterator for breadth first traversal uses the queue quite
+elegantly. As shown in figure \autoref{code:bfs}. Not much is required from the programmer. 
+    \begin{figure}[H]
+        \centering
+    \begin{minted}[
+        label=Outer method, 
+        linenos, 
+        % breaklines, 
+        frame = single, 
+        fontsize=\footnotesize]{julia}
+function iterate(tree::BTree{K,V}) where {K, V}
+    isempty(tree) && return nothing
+    node = tree.root
+    queue = DynamicQueue{Union{BTNode{K, V}, Nothing}}()
+    !isa(node.left, Nothing) && enqueue!(queue, node.left)
+    !isa(node.right, Nothing) && enqueue!(queue, node.right)
+    return node, queue
+end
+    \end{minted}
+    \begin{minted}[
+        label=Inner method, 
+        linenos, 
+        % breaklines, 
+        frame = single, 
+        fontsize=\footnotesize]{julia}
+function iterate(_::BTree{K, V}, queue) where {K,V} # BFS
+    node = dequeue!(queue)
+    isa(node, Nothing) && return nothing
+    !isa(node.left, Nothing) && enqueue!(queue, node.left)
+    !isa(node.right, Nothing) && enqueue!(queue, node.right)
+    return node, queue 
+end
+    \end{minted}
+    \caption{A breadth first iterator using a queue}
+    \label{code:bfs}
+    \end{figure}
+    % An Inorder traversal produces the infix representation of the expression.
+    % A Postorder traversal produces the postfix representation of the expression. (RPN)
+    % A Preorder traversal produces a representation that is the same as the way
+    % % that the programming language Lisp processes arithmetic expressions. (PREFIX)
+    % \subsubsection*{Pre-order traversal}
+    % % Traverses the root node first, then the left and right subtrees respectively.
+    % % % #### Tror det var den jag de facto byggde!!! 
+    % % NLR (Node Left Right)
+    
+    % Preorder (DLR): Read the data of the node, then visit the left
+    % subtree/nodes, followed by the right subtree/nodes.
+
+    % HÄR KAN DU VISA DIN PRINT TRÄD FUNKTION
+    % % 1. Traverse the root node
+    % 2. Traverse the left subtree
+    % 3. Traverse the right subtree
+
+    % It is useful when searching for an element within a BST
+
+    % A preorder traversal is used to create a copy of the tree and is also used To
+    % get prefix expression on a expression tree
+
+    % % a pre-order traversal on a topologically ordered tree is useful for listing
+    % % the dependency before the dependants. Topological ordering has use cases in
+    % % dynamic linking of programs and resolving dependencies as well as processor
+    % % scheduling.
+
+    \clearpage
+    \section*{Results}
     \label{sec:results}
+    \subsection*{The lookup benchmark}
     The result of the benchmark is illustrated in the figures and table below.
     The figure \ref{fig:fig1} diagrammatically visualize the operations while the
     data is described in table \ref{tab:growth}.
@@ -788,7 +830,133 @@ end
     \caption{}
     \label{tab:growth}
     \end{table}
+\clearpage
+\subsection*{Traversal print results}
+    \begin{table}[h]
+        \footnotesize
+        \centering
+    \begin{tabular}{|l|l|l|}
+        \hline
+        \textbf{Traversal}           & \textbf{Print results} (Key $\Rightarrow$ Value)  & \textbf{Node position}\\
+        \hline\hline
+        \multirow{7}{*}{Breadth-first}& 4 $\Rightarrow$ "Kanada - Guld"         & \textbf{Tree-Root} \\
+                                      & 2 $\Rightarrow$ "Kanada - Final"        & L Subtree Root\\
+                                      & 6 $\Rightarrow$ "Sverige - Final"       & R Subtree Root\\
+                                      & 1 $\Rightarrow$ "Kanada - Semifinal"    & L Subtree Left-Child\\
+                                      & 3 $\Rightarrow$ "USA - Semifinal"       & L Subtree Right-Child\\
+                                      & 5 $\Rightarrow$ "Australien - Semifinal"& R Subtree Left-Child\\
+                                      & 7 $\Rightarrow$ "Sverige - Semifinal"   & R Subtree Right-Child\\
+        \hline
+        \multirow{7}{*}{Pre-order}    & 4 $\Rightarrow$ "First"     & \textbf{Tree-Root} \\ % ska jag ändra om till prefix (polish notation)
+                                      & 2 $\Rightarrow$ "Second"    & L Subtree Root\\
+                                      & 1 $\Rightarrow$ "Third"     & L Subtree Left-Child\\
+                                      & 3 $\Rightarrow$ "Fourth"    & L Subtree Right-Child\\
+                                      & 6 $\Rightarrow$ "Fifth"     & R Subtree Root\\\
+                                      & 5 $\Rightarrow$ "Sixth"     & R Subtree Left-Child\\
+                                      & 7 $\Rightarrow$ "Seventh"   & R Subtree Right-Child\\
+        \hline
+        \multirow{7}{*}{Post-order}   & 1 $\Rightarrow$ "1"         & L Subtree Left-Child\\
+                                      & 3 $\Rightarrow$ "2"         & L Subtree Right-Child\\
+                                      & 2 $\Rightarrow$ "+"         & L Subtree Root\\
+                                      & 5 $\Rightarrow$ "3"         & R Subtree Left-Child\\
+                                      & 7 $\Rightarrow$ "4"         & R Subtree Right-Child\\
+                                      & 6 $\Rightarrow$ "+"         & R Subtree Root/Parent\\\
+                                      & 4 $\Rightarrow$ "*"         & \textbf{Tree-Root} \\
+        \hline
+        \multirow{7}{*}{In-order}     & 1 $\Rightarrow$ "One"       & L Subtree Left-Child\\
+                                      & 2 $\Rightarrow$ "Two"       & L Subtree Root\\
+                                      & 3 $\Rightarrow$ "Three"     & L Subtree Right-Child\\
+                                      & 4 $\Rightarrow$ "Four"      & \textbf{Tree-Root} \\
+                                      & 5 $\Rightarrow$ "Five"      & R Subtree Left-Child\\
+                                      & 6 $\Rightarrow$ "Six"       & R Subtree Root\\
+                                      & 7 $\Rightarrow$ "Seven"     & R Subtree Right-Child\\
+        \hline
+    \end{tabular}
+    \caption{The print iteration results over a tree, depending on custom iterator.}
+    \label{tab:traversalalgorithms}
+    \end{table}
     \clearpage
     \section*{Discussion}
     \label{sec:discussion}
+    \subsection*{How to shape a tree and why it matters}
+    The shape of a binary tree depends on which order the nodes were
+    added. If they are inserted with keys in ascending order,
+    then the tree nodes will just grow to the right -- leading 
+    to data structure that more resembles a \emph{Singly Linked-List} rather
+    than a tree. All the left references pointing 'nothing'.
+
+    \begin{figure}[h]
+        \centering
+        \begin{subfigure}[h]{0.45\textwidth}
+            \centering
+\begin{tikzpicture}[
+  every node/.style = {minimum width = 1em, draw, circle},
+  level/.style = {sibling distance = 25mm/#1}
+  ]
+  \node {4}
+  child {node {2} 
+        child {node {1}}
+        child {node {3}}
+        }
+  child {node {6}
+        child {node {5}}
+        child {node {7}}
+        };
+\end{tikzpicture}
+            \caption{Best case: 
+            Adding nodes in \emph{pre-order} gives the tree a well-balanced shape.
+            Level-by-level order works as well}
+            \label{fig:wellbalanced}
+        \end{subfigure}
+        % \hfill
+        \begin{subfigure}[h]{0.45\textwidth}
+            \centering
+\begin{tikzpicture}[
+  every node/.style = {minimum width = 2em, draw, circle},
+  level/.style = {sibling distance = 30mm/#1}
+  ]
+  \node {1}
+  child {edge from parent}
+  child {node {2} 
+        child {edge from parent}
+        child {node {3}
+               child {edge from parent}
+               child {node {4}
+                    child {edge from parent}
+                    child {node {5}
+                        child {edge from parent}
+                        child {node {6}
+                            child {edge from parent}
+                            child {node {7}}
+                        }
+                    }
+               }
+        }
+  };
+\end{tikzpicture}
+            \caption{Worst case:
+            Adding nodes \emph{in-order}, gives the tree a shape of a singly
+            linked list}
+            \label{fig:unbalanced}
+        \end{subfigure}
+        \caption{Why shape and order matters}
+        \label{bstshape}
+    \end{figure}
+    At worst, a basic BST operation like \hyperref[sec:adding]{adding, updating} 
+    and \hyperref[sec:lookup]{\mintinline{julia}{lookup}}, locates a node $n$ in a tree
+    of height $h$ in $O(h)$ time. 
+    A ''well-balanced'' binary tree will have a height of $(\log n)$, 
+    giving basic operations a time complexity of $O(\log n)$.
+    Adding nodes with keys in increasing (or decreasing) order 
+    defeats this logarithmic performance. Requiring instead a 
+    time-cost proportional to the length of the tree. The length being the
+    number of nodes in the tree. 
+    For example one should add seven nodes either in 
+    pre-order (4, 2, 1, 3, 6, 5, 7) or
+    level-by-level (4, 2, 6, 1, 3, 5, 7) as in \autoref{fig:wellbalanced}
+    rather than inorder (1, 2, 3, 4, 5, 6, 7) as in \autoref{fig:unbalanced}.
+    One can expect that a tree that was built on a random set of keys $n$,
+    like in the case of our benchmark, 
+    will roughly get a height of $\log n$. As one can clearly see in the benchmark 
+    result in \autoref{fig:fig1} and \autoref{tab:growth}.
 \end{document}

@@ -127,7 +127,7 @@ array element/.style = {
     ''addressing data'' in memory rather than an algorithm.) 
     
     The above-mentioned comparisons were done through different types of benchmarking. 
-    The authors intent is to reach certain conclusions regarding 
+    The author's intent is to reach certain conclusions regarding 
     the balance between the time and space complexity of hash tables. 
 
     \section*{Methods}
@@ -177,9 +177,13 @@ array element/.style = {
     \emph{Chaining} with singly linked lists
     and \emph{Linear Probing}. 
     
-    The reader will also be provided with code examples when necessary.
+    The reader will also be provided with code examples when necessary. 
+    A table of Swedish Zip Codes will be used as case study. These
+    5-digit postal codes (postnummer) range from $11115$ to $98499$, the lowest
+    targets Stockholm, while the highest is located in Pajala. 
     
     \subsection*{1-based indexing and other Conventions}
+    \label{subsec:convensions}
     It is important for the reader to note that Julia uses a \emph{one-based-numbering
     convention}, (i.e. array indices start from 1 to N) and that one dimensional
     arrays are called vectors.  
@@ -202,18 +206,47 @@ array element/.style = {
     
     Function names that end with a bang (!) mutates the arguments it receives. 
     This name suffix is by convention in Julia. 
-    \subsection*{Addressing Tables}
+    \subsection*{Hashing Tables}
+    In a \emph{Direct-address Table}, the indices of a vector directly correspond to the keys that
+    data (values) are mapped to. 
+    The data object at index $11515$ of the vector would store the information 
+    related to zip-code ''115 15'', requiring the program to at minimum allocate 
+    memory for a vector of size $98499$. The set of keys that are actually stored 
+    is quite small relative to the vector size. 
+    Hash tables require a lot less storage. Instead of directly using the key as index,
+    the index is computed from the key. A procedure called \emph{hashing}, which maps a key 
+    (and its associated value) into a hash table by using a hash function. Simply put, it 
+    converts keys into vector indices \parencite{Segeqick2011Alg4th}. 
+    
+    Several methods can be used for creating hash functions that map keys into slots. 
+    The one used in this study is called \emph{The Division Method}, 
+    a static approach to hashing that maps key $k$ into one of $m$ slots by taking the remainder of 
+    $k$ divided by $m$. In mathematical terms, the  hash function is (\(h(k) = k\mod m\)).
+    The result $h(k)$ is called the \emph{hash value} of key $k$ \parencite{CormenThomasH2022ItA}.
+    
+    \begin{minted}[
+        % label=codeexample, 
+        % linenos, 
+        % breaklines, 
+        % frame = single, 
+        fontsize=\footnotesize]{julia}
+hashing = (key, m) -> hashingByDivision(key, m)
+hashingByDivision = (k::Integer, m) -> mod1(k,m)
+    \end{minted}
+    
+    As mentioned earlier, vectors in this study are 1-based, 
+    and the returning hash value will therefore be in range $(0,m]$.
+    If key $k$ equals $m$, the function \mintinline{julia}{mod1(k,m)}
+    returns $m$ and not $0$. The situations where more than one key 
+    hash to the same slot, is called a \emph{collision}. This paper 
+    studies two types of collision resolution techniques; 
+    \emph{chaining}, which is used by \emph{closed address tables}
+    and \emph{Linear probing} which is used by \emph{open address tables}.
 
-    xxxxxx
-    Closed addressing requires ... hashing, 
-    what hashing did we choose and other exists and why.
-
-    Load factor, that c.a. requires linked lists, 
-
-    Open Addressing
-    - Load factor, that it requires resizing and rehashing
-    ... ref to discussion. 
-    xxxxx
+    \subsection*{Chaining}
+    In a \emph{closed address table}, every slot of the hash table is the head
+    of a singly linked list. If two keys hash to the same slot, they 
+    get ''chained'' together, as illustrated in \autoref{fig:chaining}. 
 
     \begin{figure}[h]
     \begin{tikzpicture}
@@ -228,30 +261,185 @@ array element/.style = {
 Collision resolution by chaining. Each slot of the vector contains a reference
 to a singly-linked list containing
 key-value pairs with the same hash value.}
-    \label{code:ClosedAddressing}
+    \label{fig:chaining}
     \end{figure}
+
+    In the algorithm that was written for this study,
+    the insert method calls a push function to prepend 
+    a key to the list that shares the same hash-value (see \autoref{code:closedaddress}).
+    The hash value corresponding to the slot, i.e. index of the vector. 
 
     \begin{figure}[h]
         \centering
-        %% you can have several subfigures or minteds
-        %% TODO: add label/caption on minted, e.g. Outer Method
     \begin{minted}[
-        label= XXXXXXX, 
+        label= Data Types (Closed Address Hash Table),
         linenos, 
         % breaklines, 
         frame = single, 
         fontsize=\footnotesize]{julia}
+mutable struct ClosedAddressHT{K,T} <: HashTable{K,T}
+    data::Vector{Union{Nothing, Node{K,T}}}
+    m # slot-size
+    n # amt of entries
+end
 
+mutable struct Node{K,T}
+    key::K
+    entry::T
+    next::Union{Node{K,T}, Nothing}
+    size # length of list from current node
+end
     \end{minted}
-    \caption{xxx} %% TODO ADD CAPTION
-    \label{code:xxx} %% TODO ADD LABEL
+    \begin{minted}[
+        label= Insertion by chaining,
+        linenos, 
+        % breaklines, 
+        frame = single, 
+        fontsize=\footnotesize]{julia}
+function insert!(
+    h_table::ClosedAddressHT{K,T},
+    key::K,
+    entry::T
+    ) where {K,T}
+
+    h_value = hashing(key, m(h_table))
+    (h_table.data[h_value] 
+    = pushfirst!(h_table.data[h_value], key, entry))
+    h_table.n += 1
+end
+
+function pushfirst!(
+    node::Union{Nothing, Node{K,T}}, 
+    key::K, 
+    entry::T) where {K,T}
+
+    return Node(key, entry, node, (size(node) + 1))
+end
+    \end{minted}
+    \caption{Julia Code example of collision resolution by chaining.} %% TODO ADD CAPTION
+    \label{code:closedaddress} %% TODO ADD LABEL
     \end{figure}
+
+    \subsection*{Linear probing}
+    In an \emph{open address table}, every key-value pair gets stored inside the hash table. 
+    No lists of references are stored
+    outside the table. Every slot contains either a key-value pair or \mintinline{julia}{nothing}.
+    Collisions are resolved by probing the table for empty slots.
+    Probing can be in several ways. This study has been assigned to implement 
+    \emph{linear probing} -- which according to \textcite{Segeqick2011Alg4th} is The
+    simplest open-addressing hashing method. 
+    Simply put, if the slot is occupied, 
+    the algorithm linearly probes the next until it locates an empty slot for insertion 
+    (see while-loop in \autoref{code:openaddress}).
+
+    \begin{figure}[h]
+        \centering
+    \begin{minted}[
+        label= Data Types (Open Address Hash Table),
+        linenos, 
+        % breaklines, 
+        frame = single, 
+        fontsize=\footnotesize]{julia}
+mutable struct StaticOpenAddressHT{K,T} <: OpenAddressHT{K,T}
+    data::Vector{Union{Nothing, Datum{K,T}}}
+    m # slot-size
+    n # amt of entries
+end
+
+struct Datum{K,T}
+    key::K
+    entry::T
+end
+    \end{minted}
+    \begin{minted}[
+        label= Insertion by linear probing,
+        linenos, 
+        % breaklines, 
+        frame = single, 
+        fontsize=\footnotesize]{julia}
+function insert!(
+    h_table::StaticOpenAddressHT{K,T}, 
+    key::K,
+    entry::T
+    ) where {K,T}
+
+    # load factor α < 1 
+    (h_table.m < h_table.n && throw(ArgumentError(
+     "Only one slot left in static hash table")))
+
+    pos = hashing(key, h_table.m)
+    while !isa(h_table.data[pos], Nothing)
+        if isequal(h_table.data[pos], key)
+            h_table.data[pos].entry = entry
+        end
+        pos = mod1((pos + 1), h_table.m)
+    end
+    h_table.data[pos] = Datum(key, entry)
+    h_table.n += 1
+end
+    \end{minted}
+    \caption{Julia Code example of collision resolution by linear probing. 
+    The insert method also check for search hits and can therefore be used for
+    handling updates} %% TODO ADD CAPTION
+    \label{code:openaddress} %% TODO ADD LABEL
+    \end{figure}
+
+    Unlike closed address tables, the 
+    amount of key-value pairs must never exceed the number of slots. The
+    while-loop in the \mintinline{julia}{insert!()} method would be 
+    infinite if the hash table would be full. 
+    A way to solve this issue is through 
+    resizing (and rehashing) the table. Rewriting row 7-9 in the insert method
+    to:
+    \begin{minted}[
+        % label= Insertion by linear probing,
+        % linenos, 
+        % breaklines, 
+        % frame = single, 
+        fontsize=\footnotesize]{julia}
+if h_table.n > ÷(h_table.m, 2) # load factor α > 1//2
+    resize!(h_table, *(h_table.m, 2), typeof(key), typeof(entry))
+end
+    \end{minted}
+    and adding the following function:
+    \begin{minted}[
+        % label= Insertion by linear probing,
+        % linenos, 
+        % breaklines, 
+        % frame = single, 
+        fontsize=\footnotesize]{julia}
+function resize!(
+    h_table::DynamicOpenAddressHT{K,T}, 
+    capacity,
+    k_type::DataType, 
+    t_type::DataType
+    ) where {K,T}
+    temp_ht = DynamicOpenAddressHT{k_type,t_type}(capacity)
+    for datum ∈ h_table.data
+        !isa(datum, Nothing) && insert!(temp_ht, datum.key, datum.entry)
+    end
+    h_table.data, h_table.m = temp_ht.data, temp_ht.m
+end
+    \end{minted}
+
+    This resizing and rehashing procedure (together with recommendation on when to use it) 
+    will be further elaborated in the discussion \autoref{sec:discussion} below.
+
+    % XXXXXxxxx lägg till searching XXXXXXX
 
     \clearpage
     \section*{Results}
     \label{sec:results}
-    \subsection*{The lookup benchmark}
-    xxxxxx describe benchmark, ref to \autoref{tab:lookup}
+    In total, three benchmarks were performed. One small benchmark 
+    comparing the running time for two search operations on a direct address table with both 
+    linear search and binary search (see \autoref{tab:lookup}). The second 
+    measuring collision resolution by chaining (see \autoref{tab:collision}) and
+    the third (demonstrated in \autoref{tab:attempts})
+    comparing linear probing on tables with different load factors. The latter also comparing open to 
+    closed address tables. 
+    
+    \subsection*{Lookup Benchmark}
+    % xxxxxx describe benchmark, ref to \autoref{tab:lookup}
 
 
     \begin{table}[h]
@@ -260,7 +448,7 @@ key-value pairs with the same hash value.}
 \begin{tabular}{lrrrr} % TODO: correct columns
     \toprule
     & \multicolumn{4}{c}{\textbf{Key}} \\\cmidrule(lr){2-5}
-    \textbf{Algorithm} & \multicolumn{1}{c}{"115 15"} &\multicolumn{1}{c}{"994 99"}& \multicolumn{1}{c}{$11515$}&\multicolumn{1}{c}{$99499$}\\
+    \textbf{Algorithm} & \multicolumn{1}{c}{"115 15"} &\multicolumn{1}{c}{"994 99"}& \multicolumn{1}{c}{\num{11515}}&\multicolumn{1}{c}{\num{99499}}\\
     \cmidrule(lr){1-1}
     \cmidrule(lr){2-5}
     Linear Search      &\SI{14}{\nano\second}   &\SI{32871}{\nano\second}   &\SI{17}{\nano\second}  &\SI{7432}{\nano\second}\\
@@ -268,10 +456,10 @@ key-value pairs with the same hash value.}
     Direct Addressing  & \multicolumn{2}{c}{n/a}                       &\SI{15}{\nano\second}  &\SI{15}{\nano\second}  \\
     \bottomrule
 \end{tabular}
-    \caption{xxxx} % TODO: add caption
+    \caption{A lookup benchmark comparing linear and binary search to a direct address table.
+    } % TODO: add caption
     \label{tab:lookup} % TODO: add correct label
     \end{table}
-\hline
 
     % \begin{figure}[h] % You can have subfigures !! If necessary 
     %     \centering
@@ -280,43 +468,155 @@ key-value pairs with the same hash value.}
     %     \label{fig:fig1} %% TODO: add correct fignbr /label
     % \end{figure}
     \subsection*{Collisions}
+    % xxxxxx describe benchmark, ref to \autoref{tab:collision}
+
+    \begin{table}[h]
+        \centering
+        \small
+\begin{tabular}{lrrrrrrrr}
+\toprule
+& \multicolumn{8}{c}{Keys (Slots)}\\
+\cmidrule(lr){2-9}
+& \multicolumn{4}{c}{Compound} &\multicolumn{4}{c}{Prime}\\
+\cmidrule(lr){2-5}
+\cmidrule(lr){6-9}
+Collisions       & \multicolumn{2}{c}{\num{10000} slots} & \multicolumn{2}{c}{\num{20000} slots} & \multicolumn{2}{c}{\num{9973} slots} & \multicolumn{2}{c}{\num{19997} slots} \\
+    \cmidrule(lr){1-1}
+    \cmidrule(lr){2-3}
+    \cmidrule(lr){4-5}
+    \cmidrule(lr){6-7}
+    \cmidrule(lr){8-9}
+
+None  & \num{2050} & (\num{2050}) & \num{4180} & (\num{4180}) & \num{3667} & (\num{3667})& \num{5069}& (\num{5069})   \\
+One  & \num{2260} & (\num{1130}) & \num{2942} & (\num{1471}) & \num{3764} & (\num{1882})& \num{3132}& (\num{1566})   \\
+Two  & \num{1635} & (\num{545})  & \num{1527} & (\num{509})  & \num{1695} & (\num{565}) & \num{1194}& (\num{398})   \\
+Three& \num{1336} & (\num{334})  & \num{776}  & (\num{194})  & \num{484}  & (\num{121}) & \num{240} & (\num{60})   \\
+Four & \num{1015} & (\num{203})  & \num{250}  & (\num{50})   & \num{65}   & (\num{13})  & \num{40}  & (\num{8})   \\
+Five & \num{594}  & (\num{99})   & \num{0}    & (\num{0})    & \num{0}    & (\num{0})   & \num{0}   & (\num{0})   \\
+Six  & \num{392}  & (\num{56})   & \num{0}    & (\num{0})    & \num{0}    & (\num{0})   & \num{0}   & (\num{0})   \\
+Seven& \num{312}  & (\num{39})   & \num{0}    & (\num{0})    & \num{0}    & (\num{0})   & \num{0}   & (\num{0})   \\
+Eight& \num{81}   & (\num{9})    & \num{0}    & (\num{0})    & \num{0}    &(\num{0})    & \num{0}   & (\num{0})   \\
+\hline
+Empty slots& \num{0}& (\num{5535}) & \num{0}    &(\num{13596}) & \num{0}    &(\num{3725}) & \num{0}   & (\num{12896})\\
+\hline
+Sum              & \num{9675} & (\num{10000}) & \num{9675} & (\num{20000}) & \num{9675} & (\num{9973})&\num{9675} & (\num{19997})\\
+\bottomrule
+\end{tabular}
+    \caption{Collision data by chaining. Two collisions imply that tree keys share the same
+    hash value and are therefore stored in the same slot (also known as bucket).
+    In other words, three data objects are chained together as a Singly Linked
+    List. 
+    For a hash-table that contains \num{10,000} slots, 
+    $545$ of them contain 3 keys each. 
+    In total $1635$ keys share the same hash value with two other keys.} %
+    \label{tab:collision} % TODO: add correct label
+    \end{table}
 
     \subsection*{Attempts}
+    % xxxxxx describe benchmark, ref to \autoref{tab:attempts}
+    \begin{table}[h]
+        \centering
+        \small
+\begin{tabular}{lrrrrrr}
+\toprule
+& \multicolumn{6}{c}{Hash Tables}\\
+\cmidrule(lr){2-7}
+& \multicolumn{3}{c}{Chaining} &\multicolumn{3}{c}{Linear Probing}\\
+\cmidrule(lr){2-4}
+\cmidrule(lr){5-7}
+Attempt & \num{10000} m & \num{9973} m & \num{20333} m & \num{10000} m & \num{9973} m & \num{20333} m \\
+\cmidrule(lr){1-1}
+\cmidrule(lr){2-7}
+First & $4465$ & $6248$ & $7964$ & $2983$ & $4028$ & $7035$\\
+Second & $2415$ & $2581$ & $1572$ & $91$ & $140$ & $281$\\
+Third & $1285$ & $699$ & $134$ & $119$ & $139$ & $196$\\
+4th & $740$ & $134$ & $5$ & $117$ & $97$ & $185$\\
+5th & $406$ & $13$ & $0$ & $91$ & $152$ & $92$\\
+6th & $203$ & $0$ & $0$ & $70$ & $89$ & $147$\\
+7th & $104$ & $0$ & $0$ & $83$ & $84$ & $93$\\
+8th & $48$ & $0$ & $0$ & $103$ & $86$ & $92$\\
+9th & $9$ & $0$ & $0$ & $85$ & $95$ & $81$\\
+10th & $0$ & $0$ & $0$ & $79$ & $52$ & $109$\\
+\multicolumn{7}{l}{.}\\
+\multicolumn{7}{l}{.}\\
+20th & $0$ & $0$ & $0$ & $50$ & $45$ & $49$\\
+30th & $0$ & $0$ & $0$ & $27$ & $4$ & $14$\\
+100th & $0$ & $0$ & $0$ & $3$ & $1$ & $2$\\
+300th & $0$ & $0$ & $0$ & $4$ & $0$ & $0$\\
 
+\bottomrule
+\end{tabular}
+    \caption{Number of keys per attempt. \num{10000} is a compound number while both \num{9973} and \num{20333} 
+    are prime. The first prime gives a load factor close to $1 \alpha$
+    while the second generates a load factor that is less than $\frac{\alpha}{2}$.
+    } %
+    \label{tab:attempts} % TODO: add correct label
+    \end{table}
+
+    \clearpage
     \section*{Discussion}
     \label{sec:discussion}
-    xxxxxx
-    \section*{EXAMPLE SECTION WITH REF}
-    xxxxxx 
-    \hyperref[sec:results]{Results}
-    xxxxxx 
-    \autoref{code:xxx}
-    % xxxxxx 
-    % \autoref{fig:fig1}
+    As confirmed by \autoref{tab:lookup}, binary search has a time complexity of $O(\log n)$,
+    while the running time for linear search is linear. However, unlike for binary search, 
+    linear search doesn't require data to be ordered. 
+    Adding data to an unsorted vector is performed in constant time, but if obtaining 
+    an order is required, as is the case for binary search,  
+    the time complexity becomes linear. Apart from that, the data has to be sorted
+    to begin with. Which at best can be performed by another algorithm with a 
+    time complexity of $O(\log n)$. Using a table, however, is linear. 
+    With a direct addressed table, both search and insert operations only 
+    require constant time. For large data the space complexity 
+    would be far to great to make direct addressing a feasible solution.  
+    A hash table, on the other hand, requires much less storage and can, in theory, still 
+    run search and insert operations at constant (amortized) time \parencite{Segeqick2011Alg4th}.
+    The challenge is to try to find the right balance between time and space.
+    There are several factors that play a role. 
+    For example, the worst case for open hashing (i.e. by chaining) could lead to a 
+    search time complexity of $0(n)$. The wrong hash function could 
+    hash all keys to the same bucket. Basically resulting in a structure that is no better 
+    than a linked list. So, what makes a good hash function? Apart from being fast to compute 
+    and consistent, a hash function should distribute the keys as uniformly as possible.  
+    For the hashing method that was used in this study, 
+    the recommendation from both 
+    by \textcite{Segeqick2011Alg4th} and \textcite{CormenThomasH2022ItA}
+    is to take $m$ to be a prime not too close to a power of $2$. Which in fact 
+    was validated by the last two benchmarks in \autoref{tab:collision} and
+    \autoref{tab:attempts}. 
+    Compare the closed address table of size \num{9973} with \num{10000}.  
+    38 percent of all keys in the closed address table 
+    had no collisions when the size of the table was prime, while adding seven more slots would
+    decrease the number to 21 percent. Roughly 57 percent of all slots are empty compared 
+    to $38$ percent if the size is prime. No keys have more than four other keys chained to it 
+    in a table of $9973$ slots while $1379$ do in a table of \num{10} thousand buckets. 
+    As the data in \autoref{tab:collision} also implies, constraining the size of the hash table 
+    to a prime has a greater impact than increasing it size.
+    However, data in linked lists are not linearly placed in memory, which
+    results in cache-misses and therefore performance degradation. 
+    Open addressing could increase the number of cache hits, where linear probing 
+    is considered being the simplest approach \parencite{CormenThomasH2022ItA}. 
+       
+    Nevertheless, spreading the data too greatly negatively
+    impacts their degree of spatial locality in memory. Which decreases the 
+    likelihood of cache hits during a long linear probe sequence. For linear probing, 
+    the ratio $\alpha = \frac{n}{m}$ has a great impact. 
+    A ratio known as a hash tables \emph{load factor}. 
+    Where $n$ is the number of elements stored in the table and $m$ is the number of slots. 
+    Since each slot can only hold one key, the load factor can never be greater than one. 
+    A hash table must also never be full, since it would result in an infinite loop during probing. 
+    For good performance, it is recommended to stay between one-eighth and one-half. According 
+    to \textcite{Segeqick2011Alg4th}, when the load factor is about one half, 
+    the average number of probes for a search hit is about $1.5$ and $2.5$ for search miss. As 
+    the data in \autoref{tab:attempts} shows, 
+    the majority of keys in a table with a load factor close to 1 require more than 10 attempts (or steps)
+    to be located, while only one quarter do for a table with a load factor of one half. There are 
+    several other techniques to improve this figure, one requiring better hashing functions. 
+    Deleting an item is also an issue. Replacing the deleted key with ''nothing'' might result in 
+    a prematurely terminated search. One way of solving this in Julia, might be  
+    replacing the newly freed slot with the singleton \mintinline{julia}{missing}, or,
+    with a trickier process suggested by \textcite{Segeqick2011Alg4th}, reinserting into 
+    the table all the keys in the cluster that are below the deleted key. Which might
+    increase future cache hits.
+  
 
-    xxxxxx with with apren cite 
-    \parencite{Segeqick2011Alg4th}
-
-    xxxxxx with with paren cite 
-    \parencite{CormenThomasH2022ItA}
-
-    xxxxxx with with text cite 
-    \textcite{Segeqick2011Alg4th}
-    xxx
-
-    xxxxxx with with text cite 
-    \citep{Segeqick2011Alg4th}
-    xxx
-
-    xxxxxx with with text cite 
-    \citet{Segeqick2011Alg4th}
-    xxx
-
-    xxxxxx with with text cite 
-    \citep{CormenThomasH2022ItA}
-    xxx
-
-
-    %\section{Appendix A - Referenser}
 \printbibliography
 \end{document}
