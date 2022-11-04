@@ -67,10 +67,3 @@ function mapchar2int(c::Char)
     println("WTF, what is this: ", c)
     return nothing 
 end
-
-# function get(node::Union{Nothing, TrieNode}, key::Int, d)
-#     # isa(node, Nothing) && return Nothing
-#     # if isequal(÷(key, 10^d), 0) return node.words
-#     # else
-#     # end
-# end

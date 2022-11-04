@@ -14,10 +14,16 @@ Notes:
 * pretty printing (show)
 * Dijkstra's algorithm
 
+# Open Issues
+* Positive infinity is a floating value in Julia, `Inf`. 
+  Should I use it in my data structure for shortest paths?
+  Does that mean that weight also have to be of type float?
+
 Contains:
 # Types
 * Edge
 * Graph # will have to rename it to UndirWeightedGraph :> Graph
+* 
 
 # Utils
 ## Base overload utils/methods
@@ -37,8 +43,8 @@ import Base: isequal, isless
 
 include("MyLL.jl")
 include("MyHash.jl")
-using .MyLL                         # or should i not?
-using .MyHash                       # or should I import?
+using .MyLL                         # or should I not?
+using .MyHash                       # or should I import instead?
 
 include("MyGraph_types.jl")
 include("MyGraph_utils.jl")
