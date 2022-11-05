@@ -1,10 +1,13 @@
 
 using Test
 using Revise
+using StatsBase
 
 include("../src/MyPQ.jl")
+include("../src/MyLL.jl")
 
 using .MyPQ
+import .MyLL
 
 @testset "heap arithmatic" begin
     @test rchild(2) == 5
@@ -199,7 +202,7 @@ end
     # println("TESTPRINT")
     # MyPQ.print_tree(treepq)
 
-    # println("remove top")
+    println("remove top")
     @test minimum(treepq).key == 1
     remove!(treepq)
     @test minimum(treepq).key == 2
@@ -235,6 +238,8 @@ end
     @test minimum(treepq) === nothing
 end
 
+
+
 # v = [16,14,10,18,7,9,3,2,4,1]
 # v2 = [16,14,10,18,7,9,3,2,4,1]
 # v3 = [16,14,10,8,100,7,9,3,2,4,1]
@@ -261,3 +266,52 @@ end
 # println("test v: ", test)
 # heapmin = MinVectorPQ(test)
 # println("heapmin of v: ", heapmin.pq)
+
+@testset "lazyPQ" begin
+    lazyPQ = MyLL.DoublyLinkedList{Int}()
+    @test MyLL.isempty(lazyPQ)
+    MyLL.push!(lazyPQ, 3)
+    MyLL.push!(lazyPQ, 5)
+    MyLL.push!(lazyPQ, 2)
+    MyLL.push!(lazyPQ, 1)
+    MyLL.push!(lazyPQ, 4)
+
+    @test MyLL.findminimum(lazyPQ).data == 1
+    MyLL.removeminimum!(lazyPQ)
+    @test MyLL.findminimum(lazyPQ).data == 2
+end
+
+@testset "eagerPQ" begin
+    eagerPQ = MyLL.DoublyLinkedList{Int}()
+    @test MyLL.isempty(eagerPQ)
+    MyLL.insert_desc_list!(eagerPQ, 3)
+    MyLL.insert_desc_list!(eagerPQ, 5)
+    MyLL.insert_desc_list!(eagerPQ, 2)
+    MyLL.insert_desc_list!(eagerPQ, 1)
+    MyLL.insert_desc_list!(eagerPQ, 4)
+
+    @test MyLL.peekfirst(eagerPQ) == 1
+    MyLL.removeminimum!(eagerPQ)
+    @test MyLL.findminimum(eagerPQ).data == 2
+    @test MyLL.peekfirst(eagerPQ) == 2
+end
+
+@testset "benchtest" begin
+    rand64 = sample(1:100, 64, replace = false)
+    lazyPQ = MyLL.DoublyLinkedList{Int64}()
+    eagerPQ = MyLL.DoublyLinkedList{Int64}()
+    treePQ = TreePQ{Int64, Int64}()
+    dynamicMinHeapPQ = MinDynamicPQ{Int64}()
+
+    for item ∈ rand64
+        MyLL.pushfirst!(lazyPQ, item)
+        MyLL.insert_desc_list!(eagerPQ, item)
+        add!(treePQ, item, item)
+        push!(dynamicMinHeapPQ, item)
+    end
+
+     @test MyLL.findminimum(lazyPQ).data == MyLL.peekfirst(eagerPQ)
+     @test minimum(treePQ).key == minimum(dynamicMinHeapPQ)
+     @test minimum(dynamicMinHeapPQ) == MyLL.peekfirst(eagerPQ)
+     @test minimum(treePQ).key == MyLL.findminimum(lazyPQ).data
+end

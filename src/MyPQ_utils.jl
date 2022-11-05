@@ -78,7 +78,8 @@ function push!(h::MyVectorPQ{T}, key::T) where {T}
     keypos = length(h) + 1
     h.size += 1
     h.pq[keypos] = key
-    swim!(h, keypos)
+    # swim!(h, keypos)
+    swim!(h, keypos, 1) # FOR BENCH
 end
 
 function push!(h::MyDynamicPQ, key::T) where {T}
@@ -93,7 +94,34 @@ function push!(h::MyDynamicPQ, key::T) where {T}
         h.last += 1
     end
     h.size += 1
-    swim!(h, keypos)
+    # swim!(h, keypos)
+    swim!(h, keypos, 1) # FOR BENCH
+end
+
+""" 
+    push!(tree::TreePQ{K,V}, incr::Int)::Int
+
+    Decreases the roots prio by incrementing its key. 
+    Cheaper than removing and then adding back the root. 
+    * The method increments key of the root element and
+    * then swaps the value from either the left or right branch depending on key value
+      (see remove??)
+    * Lastly it should return the depth the operation needs to go down 
+      (what does this exactly mean?) HOW?
+
+    # depth::Int = 0 # Som parameter. Avvakta tills du gjort klart grunden. 
+    Sen ser du om det vore bättre att använda size för att erhålla depth. Eller?
+"""
+function push!(
+    tree::TreePQ{K,V},
+    incr::Int
+    ) where {K,V}
+
+    isa(tree.root, Nothing) && throw(ArgumentError("Empty tree"))
+    key = tree.root + incr
+    value = tree.value
+    # add!(remove!(tree), key, value)
+    add!(remove!(tree), key, value, 1) # FOR BENCH
 end
 
 """
@@ -254,12 +282,14 @@ end
 
 Bottom up for max heap
 """
-function swim!(h::MaxVectorPQ{T}, keypos) where{T}
+# function swim!(h::MaxVectorPQ{T}, keypos) where{T}
+function swim!(h::MaxVectorPQ{T}, keypos, depth) where{T} # FOR BENCH
     parent = hparent(keypos) # ⌊keypos/2⌋
 
     if parent >= 1 && isless(h.pq[parent], h.pq[keypos])
         h.pq[keypos], h.pq[parent] = h.pq[parent], h.pq[keypos]
-        return swim!(h, parent)
+        # return swim!(h, parent)
+        return swim!(h, parent, depth + 1) # FOR BENCH
     end
 end
 
@@ -268,12 +298,14 @@ end
 
 Bottom up for min heaps
 """
-function swim!(h::MinVectorPQ{T}, keypos) where{T}
+# function swim!(h::MinVectorPQ{T}, keypos) where{T}
+function swim!(h::MinVectorPQ{T}, keypos, depth) where{T} # FOR BENCH
     parent = hparent(keypos) # ⌊keypos/2⌋
 
     if parent >= 1 && isless(h.pq[keypos], h.pq[parent])
         h.pq[keypos], h.pq[parent] = h.pq[parent], h.pq[keypos]
-        return swim!(h, parent)
+        # return swim!(h, parent)
+        return swim!(h, parent, depth + 1) # FOR BENCH
     end
 end
 
@@ -282,21 +314,25 @@ end
 
 Bottom up for max heap
 """
-function swim!(h::MaxDynamicPQ{T}, keypos) where{T}
+# function swim!(h::MaxDynamicPQ{T}, keypos) where{T}
+function swim!(h::MaxDynamicPQ{T}, keypos, depth) where{T} # FOR BENCH
     parent = hparent(keypos) # ⌊keypos/2⌋
 
     if parent >= h.first && isless(h.pq[parent], h.pq[keypos])
         h.pq[keypos], h.pq[parent] = h.pq[parent], h.pq[keypos]
-        return swim!(h, parent)
+        # return swim!(h, parent)
+        return swim!(h, parent, depth + 1) # FOR BENCH
     end
 end
 
-function swim!(h::MinDynamicPQ{T}, keypos) where{T}
+# function swim!(h::MinDynamicPQ{T}, keypos) where{T}
+function swim!(h::MinDynamicPQ{T}, keypos, depth) where{T} # FOR BENCH
     parent = hparent(keypos) # ⌊keypos/2⌋
 
     if parent >= h.first && isless(h.pq[keypos], h.pq[parent])
         h.pq[keypos], h.pq[parent] = h.pq[parent], h.pq[keypos]
-        return swim!(h, parent)
+        # return swim!(h, parent)
+        return swim!(h, parent, depth +1) # FOR BENCH
     end
 end
 
@@ -314,25 +350,31 @@ function resize!(h::MyDynamicPQ{T}, newsize) where {T}
 	return
 end
 
+# adapt add so that it also returns the depth for bench
 function add!(
     tree::TreePQ{K,V},
     key::K,
     value::V
     ) where {K,V}
 
-    tree.root = add!(tree.root, key, value)
-    return tree
+    # tree.root = add!(tree.root, key, value)
+    tree.root, depth = add!(tree.root, key, value, 1) # for bench # FOR BENCH
+    # return tree
+    return tree, depth # FOR BENCH
 end
 
 function add!(
     node::Union{BTNode{K, V}, Nothing},
     key::K,
-    value::V
+    # value::V
+    value::V, # FOR BENCH
+    depth  # FOR BENCH
     ) where {K, V}
 
     if isa(node, Nothing)
         node = BTNode{K, V}(key, value, nothing, nothing, 1)
-        return node
+        # return node
+        return node, depth # FOR BENCH
     end
 
     if key < node.key
@@ -340,32 +382,44 @@ function add!(
         value, node.value = node.value, value
     end
 
+    # ska jag bryta ut node.size += 1? Enligt instr kan den göras här.
+    # Eller funkar allt bra som det är? I kombination med 
+    # `node.size = size(node.left= + size(node.right) + 1`?
+
     if isa(node.left, Nothing)
         # node.left = add!(node.left, key, value)
         node.left = BTNode{K, V}(key, value, nothing, nothing, 1)
         node.size += 1
-        return node
+        # return node
+        return node, depth # FOR BENCH
     elseif isa(node.right, Nothing)
         # node.right = add!(node.right, key, value)
         node.right = BTNode{K, V}(key, value, nothing, nothing, 1)
         node.size += 1
-        return node
+        # return node
+        return node, depth # FOR BENCH
     end
 
     if size(node.left) < 3
-        add!(node.left, key, value)
+        # add!(node.left, key, value)
+        add!(node.left, key, value, depth + 1) # FOR BENCH
     elseif size(node.right) < 3
-        add!(node.right, key, value)
+        # add!(node.right, key, value)
+        add!(node.right, key, value, depth + 1) # FOR BENCH
     elseif size(node.left) < rchild(size(node.right))
-        add!(node.left, key, value)
+        # add!(node.left, key, value)
+        add!(node.left, key, value, depth + 1) # FOR BENCH
     else
-        add!(node.right, key, value)
+        # add!(node.right, key, value)
+        add!(node.right, key, value, depth + 1) # FOR BENCH
     end
 
     node.size = size(node.left) + size(node.right) + 1 # osäker
-    return node
+    # return node
+    return node, depth # FOR BENCH
 end
 
+# Funkar remove? Vad säger testerna?
 function remove!(tree::TreePQ{K,V}) where {K,V}
     node = tree.root
     newnode = remove!(node)
@@ -403,6 +457,7 @@ function remove!(
     return node
     
 end
+
 
 # JUST FOR TESTING
 # JUST FOR TESTING

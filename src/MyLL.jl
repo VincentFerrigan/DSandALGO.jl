@@ -22,6 +22,7 @@ Contains:
 # utils
 - length
 - isempty
+- isless
 - show #TODO
 - iterate
 - pushfirst!
@@ -47,7 +48,7 @@ module MyLL
 
 using Random # for creating random lists/vectors
 
-import Base: isempty, pushfirst!, popfirst!, length
+import Base: isempty, pushfirst!, popfirst!, length, isless, isequal
 import Base: append!, push!, pop!, popat!, show, findfirst, iterate
 
 include("MyLL_types.jl") # includes types and outer constructs

@@ -2,6 +2,13 @@
 # Utils for MyLL module in MyLL.jl
 
 # Utils
+function isless(a::MyAbstractNode, b::MyAbstractNode) 
+    isless(a.data, b.data)
+end
+function isequal(a::MyAbstractNode, b::MyAbstractNode) 
+    isequal(a.data, b.data)
+end
+
 length(ll::MyAbstractLinkedList{T}) where {T} = ll.n
 
 function isempty(ll::MyAbstractLinkedList{T}) where {T} 
@@ -455,4 +462,53 @@ function createrandom_dllist(size)
     rand!(v, 1:10*size)
     dll = dllistfromvector(v) ## Har dessa previous?
     return dll 
+end
+
+"""
+    findminimum(list::MyAbstractLinkedList{T})::node
+    Returns the minimum item in an unordered list
+"""
+function findminimum(list::MyAbstractLinkedList{T}) where {T}
+    list.n == 0 && throw(ArgumentError("List is empty"))
+
+    min = list.head
+    for node ∈ list
+        if isless(node, min) 
+            min = node
+        end
+    end
+    return min
+end
+
+"""
+    removeminimum!(list::MyAbstractLinkedList{T})::node
+    Returns and removes the minimum item in an unordered list
+"""
+
+function removeminimum!(list::MyAbstractLinkedList{T}) where {T}
+    list.n == 0 && throw(ArgumentError("List is empty"))
+    min = findminimum(list)
+    remove!(list, min)
+    return min
+end
+
+"""
+    inserts item in a list in descending order.
+    note: Ska kolla om node isless och node next isless
+"""
+function insert_desc_list!(list::MyAbstractLinkedList{T}, item::T) where {T}
+    isa(list, DoublyLinkedList) || throw(ArgumentError("For now, only for DLL"))
+    isempty(list) && (return pushfirst!(list, item))
+    isless(item, peekfirst(list)) && (return pushfirst!(list, item))
+
+    for node ∈ list
+        if isless(node.data, item) && (isa(node.next, Nothing) || isless(item, node.next.data))
+            previousnode = node
+            nextnode = node.next
+            newnode = DoubleNode{T}(item, previousnode, nextnode)
+            previousnode.next = newnode
+            isa(nextnode, Nothing) || (nextnode.previous = newnode)
+            list.n +=1
+        end
+    end
 end
