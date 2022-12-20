@@ -1,0 +1,213 @@
+
+%! FerriganHeap.tex
+%! Author = Vincent Ferrigan <ferrigan@kth.se>
+%! Date = 2022-11-04
+
+
+% Preamble
+\documentclass[a4paper, 11pt]{article}
+% Packages
+\usepackage[T1]{fontenc}
+% \usepackage[utf8]{inputenc} % ska den tas bort iom lua?
+% \usepackage[utf8]{luainputenc}
+\usepackage[english]{babel}
+\usepackage{fontspec}
+\usepackage{microtype}
+\setmonofont{DejaVu Sans Mono}[Scale=MatchLowercase]
+\usepackage{listings}
+\usepackage{minted}
+\usepackage{latexsym,exscale,stmaryrd,amsmath,amssymb}
+\newtheorem{definition}{Definition}
+\usepackage{unicode-math}
+\usepackage{lmodern}
+\usepackage{enumitem}
+\usepackage{subcaption}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{multirow}
+\usepackage{diagbox} % For diagonal lines in tabular
+\usepackage{booktabs}
+% \usepackage{paralist}
+
+%% Om jag vill referera till ett kod verb av något slag, som void null Int etc
+% \usepackage{tcolorbox}
+% \newtcbox{\somestuffstyle}{on line,boxrule=0pt,boxsep=0pt,colback=lightgray,top=1pt,bottom=1pt,left=1pt,right=1pt,arc=0pt,fontupper=\ttfamily}
+
+\usepackage[
+    backend=biber,
+    % hyperref=true,
+    maxnames=3, 
+    minnames=1, 
+    nohashothers=false
+    bibencoding=utf8, % eventuellt
+    style=apa,
+    % citestyle=apa,
+    pluralothers=true,
+    natbib=true
+    % sorting=nyt
+    % autocite=inline
+    ]{biblatex}
+\DefineBibliographyStrings{english}{andothers={et. al}, and={&}}
+\DeclareLanguageMapping{english}{english-apa}
+\addbibresource{references.bib} % hör till referenser
+% \addbibresource{../references.bib} % hör till referenser
+% \usepackage[backend=biber,style=apa,natbib=true,sorting=nyt]{biblatex}
+% \addbibresource{references.bib}
+% \usepackage{natbib}
+\usepackage{csquotes}
+\usepackage[nottoc]{tocbibind}
+\usepackage{xcolor}
+\usepackage{siunitx}
+\usepackage{tikz}
+\usepackage[font=small,labelfont=bf]{caption}
+% Addiding JuliaMono
+\newfontfamily \JuliaMono {JuliaMono-Regular.ttf}[
+    Path      = ./,
+    Extension = .ttf
+    ]
+\newfontface \JuliaMonoMedium{JuliaMono-Regular}
+\setmonofont{JuliaMonoMedium}[
+    Contextuals=Alternate
+]
+
+\title{A Heap or Priority Queue\\ \small{ID1021 Algorithms and Data structures}} %%TODO VILKEN RUBRICERING
+\author{Vincent Ferrigan}
+
+\date{\today}
+
+\begin{document}
+    \maketitle
+    \section*{Introduction}
+    \emph{Priority Queues} are data structures that support two operations; removing items 
+    in a specific order and adding item in a way the preserves that order. 
+    In other words, 
+    the items are perceived to have a certain priority \parencite{Segeqick2011Alg4th}.
+    In this study, each item holds an integer as \emph{key}, 
+    where small key-numbers have higher priority. 
+    The key being a unique integer for a node that also holds a specific data (value)
+    
+    While \emph{stacks} and \emph{queues} remove items depending on the order in
+    which they were added, the 
+    so-called \emph{FIFO} and \emph{LIFO approach}, 
+    the priority queue in this study 'removes the minimum' - where the 'minimum' is the
+    item with the highest priority. 
+
+    The study will compare different implementations of priority queues, 
+    where focus will lie on the \emph{binary heap}. It will also look at performance,
+    which will be done through benchmarking. 
+
+    \section*{Methods}
+    \label{sec:methods}
+    All the Data Structures and Algorithms were implemented in \emph{Julia}.
+    The Code was mostly written in \emph{VSCode} and run on \emph{Julia 1.8.0}.
+    Quick-fixes and editing was, however, done in \emph{Vim}. 
+    Some scripts were executed from the \emph{REPL terminal},  while others (e.g.
+    when using data frames, performing benchmarks and producing plots) 
+    were executed from the \emph{Jupyter Notebook}. 
+    % Ska jag lägga till länk till min github? To follow the progress.....
+    % men då måste notebooken läggas upp.
+    
+    \subsection*{Tools and packages}
+    All tests were performed with the built-in package \emph{Test} and 
+    iterative development was made possible through 
+    \emph{Revise.jl} -- the latter operates by continuously
+    scanning the source code for changes, even changes in functions defined in
+    other modules (including modules written in different files). 
+    Version control was done through \emph{Git} and \emph{Git-Hub} and the paper
+    was written in \emph{\LaTeX} and compiled with \emph{LuaTeX} and \emph{Biber}.
+    
+    The benchmark data was constructed, manipulated and visualized through
+    \emph{DataFrames.jl} and \emph{Plots.jl}, 
+    while readable formatting was produced through 
+    \emph{Formatting.jl} and \emph{Unitful.jl}. 
+
+    \subsection*{The JIT}
+    Julia has a just-in-time (JIT) compilation -- which means that the code is
+    dynamically compiled during program run time.     
+    It takes time for the JIT compiler to 
+    initially load the code and compile it. Therefore, in order not to skew the
+    results, \emph{warm-up calls} were performed on certain parts of the code
+    before they were benchmarked. This to avoid including 
+    compilation time. The warm-up calls were done with the @timed macro prior to
+    benchmarking.
+
+    \section*{The Data Structure/Algorithms} %% TODO CHANGE DEPENDING ON ASSIGNMENT
+    xxxxxx
+    \subsection*{Conventions}
+    xxxxxx
+
+    \begin{figure}[h]
+        \centering
+        %% you can have several subfigures or minteds
+        %% TODO: add label/caption on minted, e.g. Outer Method
+    \begin{minted}[
+        label= XXXXXXX, 
+        linenos, 
+        % breaklines, 
+        frame = single, 
+        fontsize=\footnotesize]{julia}
+
+    \end{minted}
+    \caption{xxx} %% TODO ADD CAPTION
+    \label{code:xxx} %% TODO ADD LABEL
+    \end{figure}
+
+    \section*{Results}
+    \label{sec:results}
+    xxxxxx
+
+    % \begin{figure}[h] % You can have subfigures !! If necessary 
+    %     \centering
+    %     \includegraphics[width=0.8\textwidth]{./input/xxxxx.pdf} %% TODO: add pdf
+    %     \caption{xxxx}%% TODO: add caption
+    %     \label{fig:fig1} %% TODO: add correct fignbr /label
+    % \end{figure}
+
+    \begin{table}[h]
+        \centering
+        \small
+\begin{tabular}{|c|c|c|} % TODO: correct columns
+
+\end{tabular}
+    \caption{xxxx} % TODO: add caption
+    \label{tab:xxx} % TODO: add correct label
+    \end{table}
+\hline
+
+    \section*{Discussion}
+    \label{sec:discussion}
+    xxxxxx
+    \section*{EXAMPLE SECTION WITH REF}
+    xxxxxx 
+    \hyperref[sec:results]{Results}
+    xxxxxx 
+    \autoref{code:xxx}
+    % xxxxxx 
+    % \autoref{fig:fig1}
+
+    xxxxxx with with apren cite 
+    \parencite{Segeqick2011Alg4th}
+
+    xxxxxx with with paren cite 
+    \parencite{CormenThomasH2022ItA}
+
+    xxxxxx with with text cite 
+    \textcite{Segeqick2011Alg4th}
+    xxx
+
+    xxxxxx with with text cite 
+    \citep{Segeqick2011Alg4th}
+    xxx
+
+    xxxxxx with with text cite 
+    \citet{Segeqick2011Alg4th}
+    xxx
+
+    xxxxxx with with text cite 
+    \citep{CormenThomasH2022ItA}
+    xxx
+
+
+    %\section{Appendix A - Referenser}
+\printbibliography
+\end{document}
