@@ -8,7 +8,7 @@
 *.o
 *.so
 
-# Latex source other than tex and bib#
+# Latex source other than tex #
 ###################
 *.pdf
 *.bcf
@@ -16,6 +16,12 @@
 *.ttf
 *.fls
 *.xml
+*.out
+*.pyg
+*.fdb_latexmk
+*.blg
+*.bbl
+*.bib
 
 # Packages #
 ############
@@ -45,3 +51,11 @@
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Other, folders etc for now
+*Template*
+*kladd.md
+*.ipynb 
+*vscode*
+*minted*
+*.html
