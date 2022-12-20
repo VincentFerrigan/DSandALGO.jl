@@ -87,20 +87,32 @@
     This can be done through studying their implementation. 
             
     \section*{Methods}
-    The data structures and stack were implemented in \emph{Julia}. 
-    The code was written in \emph{VSCode} and run on \textbf{Julia 1.8.0}. 
-    Quick-fixes was done in \emph{Vim}. 
-    Some scripts were executed from the \emph{REPL terminal} while others (e.g.
-    when using DataFrames and producing Plots) were executed from the
-    \emph{Pluto Notebook}. Pluto was also used to stack operations.  
+    All the Data Structures and Algorithms were implemented in \emph{Julia}.
+    The Code was mostly written in \emph{VSCode} and run on \emph{Julia 1.8.0}.
+    Quick-fixes and editing was, however, done in \emph{Vim}
 
+    Some scripts were executed from the \emph{REPL terminal},  while others (e.g.
+    when using data frames, performing benchmarks and producing plots) were executed from the
+    \emph{Jupyter Notebook}. 
+    
+    \subsection*{Tools and packages}
+    All tests were performed with the built-in package \emph{Test} and iterative development
+    was made possible through \emph{Revise.jl} -- the latter operates by continuously
+    scanning the source code for changes, even changes in function defined in
+    other modules (including in different files).
+    
+    The benchmark data was constructed, manipulated and visualized through
+    \emph{DataFrames.jl} and \emph{Plots.jl}, while 
+    readable formatting was produced through \emph{Formatting.jl} and \emph{Unitful.jl}. 
+
+    \subsection*{The JIT}
     Julia has a just-in-time (JIT) compilation -- which means that the code is
     dynamically compiled during program run time.     
     It takes time for the JIT compiler to 
     initially load the code and compile it. Therefore, in order not to skew the
     results, \emph{warmup calls} were performed on certain parts of the code
-    before they were benchmarked. This in order to avoid including 
-    compilation time. The warmup calls were done with the @time macro prior to
+    before they were benchmarked. This to avoid including 
+    compilation time. The warmup calls were done with the @timed macro prior to
     benchmarking.
 
     % \section*{Learning objectives}
@@ -108,114 +120,158 @@
 
     \section*{The Data Structures}
     This section briefly describes the key differences between arrays and lists 
-    
-    It is important for the reader to note that in Julia, arrays are 1-based, 
-    i.e. started from 1 to N, and that one dimensional arrays are called
-    vectors. For consistency, the author has chosen to refer to one dimensional
-    arrays as vectors.
 
+    \subsection*{Conventions}
+    It is important for the reader to note that Julia uses a one-based-numbering
+    convention, (i.e. array indices start from 1 to N) and that one dimensional
+    arrays are called vectors. 
+    For consistency, the author has chosen to refer to one dimensional
+    arrays as vectors and apply the 1-based convention when numbering
+    sequences of elements more broadly. 
+
+    Function names that ends with a bang (!) mutates the arguments it receives. 
+    This name suffix is by convention in Julia. 
+    
+    Unlike other languages, Julia objects cannot be ''null'' by default. The
+    equivalent of \lstinline[language=Python]{None} in Python 
+    or \lstinline[language=C]{NULL} and \lstinline[language=C]{void} in C is
+    \mintinline{julia}{Nothing}. The Julia convention is to return the value \mintinline{julia}{nothing}, which is a
+    singleton instance of type \mintinline{julia}{Nothing}, when such a side effect is
+    desired. 
     \subsection*{Linked Lists}
-    Linked lists are dynamic data structures that unlike vectors, do not require
-    to be stored contiguously in memory. They are composed of a chain of 
-    nodes that are linked together by pointers (or references). 
+    Linked lists are dynamic data structures that, unlike vectors, do not require
+    to be stored contiguously in memory. They are instead composed of a chain of 
+    nodes that are linked together by pointers or references. 
+    
+    The implementation of a linked list requires two data structures;
+    one for the actual node and another for the linked-list, the latter containing a
+    reference that points to the first node.
     Each node contains at least two parts; an item of any type and 
     the memory address of the next node in the list. 
-    The last node in the list contains a null pointer 
-    -- i.e. it points to NIL or nothing. 
-    Figure \ref{code:SingleNode} shows how a basic node can be implemented in Julia. 
-    Instead of pointing to Julia's version of ''nothing'', 
-    the author chose to point to a custom type of own creation. 
-    As seen in row 3, the type, called \emph{EmptySingleNode}, is immutable 
-    and contains nothing. The two constructors in row 9-15 are implemented for 
-    convenience. 
+    The last node in the list contains a next filed that holds no value.  
+    -- i.e. it points to \mintinline{julia}{nothing} which, as previously mentioned, is a 
+    singleton instance of type ''Nothing''. 
+    Figure \ref{code:node} shows how the node can be implemented in Julia. 
 
     \begin{figure}[H]
+        \centering
     \begin{minted}[
-        % label=codeexample, 
+        label= Node Data Types (Custom Structs), 
         linenos, 
         % breaklines, 
-        % frame = single, 
+        frame = single, 
         fontsize=\footnotesize]{julia}
-abstract type AbstractSingleNode end
+mutable struct SingleNode{T} <: MyLinkedListNode{T}
+    data::T
+    next::Union{SingleNode{T}, Nothing}
+end
 
-struct EmptySingleNode <: AbstractSingleNode end
-
-mutable struct SingleNode <: AbstractSingleNode
-    item::Any
-    next::AbstractSingleNode
-
-    function SingleNode(item) 
-        new(item, EmptySingleNode())
-    end
-
-    function SingleNode(item, next::SingleNode)
-        new(item, next)
-    end
+    \end{minted}
+    \caption{Node example for singly linked list in Julia}
+    \label{code:node}
+    \end{figure}
+    Since the field \mintinline{julia}{next} only sometimes contain a
+    reference to another node, the data type \mintinline{julia}{Union} was used for field
+    declaration -- a union that includes the composite
+    data type (for the node in question) and `nothing`.
+    
+    The first node is conventionally called \emph{the head}, as in the head of the list. 
+    The linked list therefore usually only contains one item, the reference to the first node, the 
+    head that is, as seen in figure \ref{code:SingleList}. In the authors' implementation, 
+    the number of elements that the list holds is also included. 
+    The \mintinline{julia}{head}, can
+    sometimes contain a reference to nothing, if the list is empty. 
+    \begin{figure}[H]
+        \centering
+    \begin{minted}[
+        label= Linked List Datatypes (Custom Struct), 
+        linenos, 
+        % breaklines, 
+        frame = single, 
+        fontsize=\footnotesize]{julia}
+mutable struct SinglyLinkedList{T} <: MyBasicLinkedList{T}
+    head::Union{Nothing, SingleNode{T}}
+    n::Int
 end
     \end{minted}
-    \caption{A basic single node in Julia}
-    \label{code:SingleNode}
-    \end{figure}
-    
-    \clearpage
-    
-    The first node is conventionally called the \emph{head}, as in the head of the list. 
-    The linked list therefore only contains one item, the pointer (or reference) to the first node, the 
-    head that is, as seen in figure \ref{code:SingleList}
-    
-    \begin{figure}[H]
     \begin{minted}[
-        % label=codeexample, 
+        label= Outer constructs,
         linenos, 
         % breaklines, 
-        % frame = single, 
+        frame = single, 
         fontsize=\footnotesize]{julia}
-mutable struct SingleLinkedList
-
-    head::AbstractSingleNode
-
-    function SingleLinkedList()
-        new(EmptySingleNode())
-    end
-    function SingleLinkedList(item)
-        new(SingleNode(item))
-    end
-end
-        
+# Outer constructs
+SinglyLinkedList{T}() where {T} = SinglyLinkedList{T}(nothing, 0)
     \end{minted}
     \caption{Single Linked List in Julia}
     \label{code:SingleList}
     \end{figure}
 
-    The last node is conventionally called the \emph{tail} and, as mentioned earlier, points to ''nothing''.
-    Locating the lists tail requires one to traverse through the entire list.
-    An example how this can be done is shown in figure \ref{code:findtail}
-    
+    The last node is conventionally called \emph{the tail} and, as mentioned earlier, 
+    points to ''nothing''. In some implementations, a reference to the tail is also included. 
+    However, it was omitted in this study.
+    Locating the lists' tail therefore requires one to traverse through the entire list.
+    An example on how this can be performed is shown in figure \ref{code:findtail}. 
     \begin{figure}[H]
+    \centering
     \begin{minted}[
-        % label=codeexample, 
+        label= Locate tail, 
         linenos, 
         % breaklines, 
-        % frame = single, 
+        frame = single, 
         fontsize=\footnotesize]{julia}
-function findtail(list::SingleLinkedList)
-    # short-curcuit condition
-    isempty(list) && throw(BoundsError())
-    node = list.head
-    while !(node.next isa EmptySingleNode)
+function findtail(ll::MyBasicLinkedList{T}) where {T}
+    ll.n == 0  &&  throw(ArgumentError("List is empty"))
+    node = ll.head
+    while node.next !== nothing
         node = node.next
     end
     return node
 end
     \end{minted}
-    \caption{How to loacte the tail of a Linked List in Julia}
+    \begin{minted}[
+        label= Locate previous node, 
+        linenos, 
+        % breaklines, 
+        frame = single, 
+        fontsize=\footnotesize]{julia}
+function findnode_withnext(
+    ll::MyAbstractLinkedList{T}, 
+    nextnode::MyLinkedListNode{T}
+    ) where {T}
+    # short-curcuit (error and return) conditions
+    isempty(ll) && throw(BoundsError()) 
+    nextnode == ll.head && return nothing
+    # find next
+    node = ll.head 
+    while node.next !== nextnode
+        (node.next isa Nothing ? 
+          (return nothing) : (node = node.next))
+    end
+    return node
+end
+    \end{minted}
+    \caption{How to locate the tail or previous node of a Linked List, 
+    if the reference is unknown}
     \label{code:findtail}
     \end{figure}
-     
-    This function is important when appending an item, or another list, to a list. 
-    Appending an item requires it to first be stored in a node, that then gets pointed to 
+
+    The function \mintinline{julia}{findtail} is used as a step in
+    adding/removing items at the end of the list 
+    while \mintinline{julia}{findnode_withnext} is when a reference to is unknown.
+    For example when removing nodes that are uni-linked, as is the case in 
+    the remove method for singly linked list (see \autoref{code:remove!}). 
+    Adding items to the end of a collection 
+    is conventionally called \mintinline{julia}{push!} while removing is called
+    \mintinline{julia}{pop!}. 
+    \clearpage 
+    
+    The function \mintinline{julia}{findtail} 
+    is important not only when adding an item, but also when appending another list, to a list. 
+
+    Pushing an item requires it to first be stored in a node, that then gets pointed to 
     by the tail of the list, which has to be found by traversing the entire list. 
-    The appended node effectively becomes the new tail. Appending another list to a list
+    The pushed node effectively becomes the new tail. Appending another list to a list
     requires a similar procedure. As one can read from the code in 
     figure \ref{code:appendfunctions}, the head of the appended list gets attached to the tail 
     of the prepended list.
@@ -227,26 +283,28 @@ end
         % breaklines, 
         % frame = single, 
         fontsize=\footnotesize]{julia}
-function append!(list::SingleLinkedList, item)
-    node = SingleNode(item)
-    if isempty(list)
-        list.head = node
+function push!(sll::SinglyLinkedList{T}, item::T) where {T}
+    if isempty(sll)
+        sll.head = SingleNode{T}(item, nothing)
     else
-        tail = findtail(list) 
-        tail.next = node
+        oldtail = findtail(sll) 
+        oldtail.next = SingleNode{T}(item, nothing)
     end
+    sll.n += 1
+    return sll # alt. skriv utan retur
 end
-
-function append!(firstlist::SingleLinkedList, secondlist::SingleLinkedList)
+function append!(firstlist::SinglyLinkedList, secondlist::SinglyLinkedList)
     if isempty(firstlist)
         firstlist.head = secondlist.head
     else
-        tail = findtail(firstlist)
-        tail.next = secondlist.head
+        oldtail = findtail(firstlist)
+        oldtail.next = secondlist.head
     end
+    firstlist.n += secondlist.n
+    firstlist
 end
     \end{minted}
-    \caption{Append functions in Julia}
+    \caption{The push and append function in Julia}
     \label{code:appendfunctions}
     \end{figure}
 
@@ -279,19 +337,21 @@ end
 
     \clearpage
     \section*{Discussion}
+
 Elements of linked lists cannot be as easily (nor as timely) accessed as with arrays. 
 It requires one to traverse the list. 
-Accessing the last index in an array is done in constant time, 
+Accessing the last index in an array is done in constant time, $O(1)$, 
 while it would require one to traverse the entire linked list -- until one
-reaches the node that is linked to the node that contains ''nothing''.
+reaches the node that is linked t ''nothing''. 
+The time complexity is therefore linear $O(n)$.
 %**{::comment} 
 %Ska jag skriva något om nothing, jag skulle kunna ha en fotnot och/eller länka till den delen som beskriver processen med text och kod.
 % {:/comment}**
-As a consequence *binary search* is not be possible using linked lists, 
-since the elements can not be accessed in constant time. 
-Nor is it possible to locate the maximum element as fast as with vectors 
+As a consequence *binary search* is not possible using linked lists, 
+nor is it possible to locate the maximum element as fast as with vectors 
 -- unless, perhaps, it's a linked list that is sorted in descending order.  
-On the other hand, appending lists is more timely than with vectors. 
+
+On the other hand, TODO ******************* write about space complexity for linked lists!*****
 This is due to the fact that vectors size and layout in memory are fixed at the 
 time of creation. 
 Appending a vector to another requires one to allocate memory for a new larger vector 
@@ -304,7 +364,7 @@ Removing the last node however, requires one to traverse the entire list.
 Time proportional to the length of the list.
 
 
-% ** skriv om nedan**
+% ** skriv om nedan** TODO
 %  However, one may need to combine two lists into one. This is the concatenation
 %  operation. With chains, the best approach is to attach the second list to the
 %  end of the first one. In our implementation of the linked list, this would
